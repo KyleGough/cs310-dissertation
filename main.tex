@@ -1,5 +1,8 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage{graphicx} %For adding images to the document.
+\usepackage{calendar} %For timetable object.
+\usepackage[left=2cm, right=3cm, top=2cm]{geometry} %For setting page margins.
 
 \title{CS310 Dissertation - Using Swarm AI to map a Cave Network}
 \author{Kyle Gough}
@@ -13,13 +16,63 @@
 
 \section{Introduction}
 
-Many unexplored caverns and mineshafts are dangerous for human exploration due to various factors such as flood risk, heat, tight spaces, harmful gases and instability. A safer and risk-free method would be to employ the use of a fleet of autonomous drones. The drones will use Swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths and avoid crowding by splitting up wherever possible to increase the efficiency of the exploration. This project aims to identify and simulate the specific behaviours required to increase the efficiency of cave exploration.
+Many unexplored caverns and mine-shafts are dangerous for human exploration due to various factors such as flood risk, heat, tight spaces, harmful gases and instability. A safer and risk-free method would be to employ the use of a fleet of autonomous drones. The drones will use Swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths and avoid crowding by splitting up wherever possible to increase the efficiency of the exploration. This project aims to identify and simulate the specific behaviours required to increase the efficiency of cave exploration.
 
 \section{Background}
 
 \section{Current Hardware and Software}
 
+\subsection*{Zebedee}
+\begin{quote}
+    Commonwealth Scientific and Industrial Research Organisation
+\end{quote}
+Zebedee is a hand-held device which contains a laser scanner in constant rotation. A human operator holds the device whilst traversing an area and the signals received from the device can be used to create a map of the surrounding area. It allows the creation of a complex and detailed map of the area, however it is restricted by the speed and reachability of the human operator in the environment.
+
+\subsection*{Hovermap}
+\begin{quote}
+    Commonwealth Scientific and Industrial Research Organisation
+\end{quote}
+Hovermap is an attached to hover drones which uses LIDAR technology to map the entire surrounding environment. It is similar to Zebedee but isn't required to be held and is not restricted by human speed or reach-ability of the environment. The hovermap is not yet capable of interacting with other similar drones to increase exploration efficiency.
+
 \section{Objectives}
+
+\begin{enumerate}
+    \item Create a cave environment generator that is customisable and reproducible.
+    \begin{list}{$\circ$}{}
+        \item Size of open areas.
+        \item Size of tunnel areas.
+        \item Frequency of open areas.
+        \item Total volume of open space.
+        \item Length of cavern sections.
+        \item Stalagmites, stalactites and other natural cave formations.
+        \item Cavern wall textures.
+    \end{list}
+    
+    \item Create a simulation of a drone which can:
+    \begin{list}{$\circ$}{}
+        \item Sense the surrounding environment up to a specific range.
+        \item Locally map the currently explored environment.
+        \item Communicate with nearby drones and exchange exploration information.
+        \item Identify possible unexplored areas and decide the best option to navigate to.
+    \end{list}
+    
+    \item Drones should aim to scan the entire cave network. In instances of multiple drones they should work together to map the cave efficiently by:
+    \begin{list}{$\circ$}{}
+        \item Communicating map information when two drones are in communication distance.
+        \item Aim to explore areas not yet explored but any known drone.
+    \end{list}
+    
+    \item Drones should aim to follow some rules to avoid unnecessary costs, increase efficiency and improve health and safety. These rules are inspired by a ruleset employed in the 2D simulation BOIDS to steer birds in a flock.
+    \begin{list}{$\circ$}{}
+        \item Avoid contact with the cave walls and other hazardous environment.
+        \item Avoid contact with other drones.
+        \item Explore areas where other drones are not actively exploring.
+    \end{list}
+    
+    \item Be able to generate caves and simulate solutions in 2D space.
+    
+\end{enumerate}
+
 
 \section{Possible Extensions}
 
@@ -33,6 +86,181 @@ Many unexplored caverns and mineshafts are dangerous for human exploration due t
 \section{Testing}
 
 \section{Timetable}
+
+\StartingDayNumber=2
+
+% TERM 1 Timetable
+
+\begin{center}
+\textsc{\LARGE TERM 1} 
+\textsc{\large January Weeks}
+\end{center}
+
+\begin{calendar}{\textwidth}
+
+\day{}{}
+\day{}{}
+\day{}{ % Wednesday
+\textbf{12:00pm-14:00pm} Project work \\[3pt]
+\textbf{14:30am-16:30pm} Project work \\[3pt]
+}
+\day{}{}
+\day{}{ % Friday
+\textbf{14:00pm-15:00pm} Project work \\[3pt]
+}
+\day{}{ % Saturday
+\textbf{12:00pm-15:00pm} Project work \\[3pt]
+}
+\day{}{}
+ 
+\finishCalendar
+\end{calendar}
+
+
+
+\begin{center}
+\textsc{\LARGE TERM 1} 
+\textsc{\large January Weeks}
+\end{center}
+
+\begin{calendar}{\hsize}
+
+\day{}{ % Monday
+    \textbf{9am-5pm} \daysep Work at Max fiesta
+}
+\day{}{ % Tuesday
+    \textbf{7:00am-8:00} \daysep Female and male athletics - training on the courts  \\[3pt]
+    \textbf{9am-11am} \daysep Ec.Dif. -C102 \\[3pt]
+    \textbf{11:30am-13:30am} \daysep Distributed Systems - B104 \\[3pt]
+    \textbf{13:30am-2:30pm} \daysep Dinner-Cafeteria \\[3pt]
+}
+\day{}{ % Wednesday
+\textbf{7am-9am} \daysep English - F002 \\[3pt]
+\textbf{9am-11am} \daysep Knowledge-based systems - B104 \\[3pt]
+\textbf{11:30am-13:30pm} \daysep Networks and telecommunications - B104 \\[3pt]
+\textbf{14:30pm-16:30pm} \daysep Descriptive and inferential statistics - B104 \\[3pt]
+\textbf{17:00pm-19:00pm} \daysep Women's and men's basketball - Training on the courts \\[3pt]
+}
+\day{}{ % Thursday
+\textbf{7:00am-8:00am} \daysep Female and male athletics - Training on the courts \\[3pt]
+\textbf{9am-11am} \daysep differential equations
+ - C003 \\[3pt]
+\textbf{11:30am-13:30pm} \daysep Distributed Systems - B104 \\[3pt]
+\textbf{14:00pm-15:00pm} \daysep Distributed Database \\[3pt]
+}
+\day{}{ % Friday
+\textbf{7:00am-9:00am} \daysep English Class - F002\\[3pt]
+\textbf{9:00am-11:00am} \daysep Knowledge-Based Systems - B104 \\[3pt]
+\textbf{11:30 am-13:30pm} \daysep Networks and Telecommunications - B104 \\[3pt]
+\textbf{14:30pm-16:30pm} \daysep Descriptive and inferential statistics - B104\\[3pt]
+\textbf{17:00pm-19:00pm} \daysep Women's and men's basketball - Training on the courts \\[3pt]
+\textbf{19:00pm-21:00pm} \daysep Gym \\[3pt]
+}
+\day{}{ % Saturday
+\textbf{8:00am-10:00am} \daysep Critical Thinking - Aula Magna B \\[3pt]
+\textbf{9:00am-11:00m} \daysep Distributed Databases  - B104 \\[3pt]
+\textbf{16:00am-18:00pm} \daysep Capoeria -  Multi-Purpose Classroom Ground floor of the cafeteria\\[3pt]
+\textbf{18:00pm-20:00pm} \daysep Gym \\[3pt]
+}
+\day{}{ % Sunday
+\textbf{13:00pm-17:00pm} \daysep Lecture\\[3pt]
+}
+ 
+\finishCalendar
+\end{calendar}
+
+\begin{center}
+\textsc{\LARGE TERM 1} 
+\textsc{\large January Weeks}
+\end{center}
+
+\begin{calendar}{\hsize}
+
+\day{}{ % Monday
+    \textbf{9am-5pm} \daysep Work at Max fiesta
+}
+\day{}{ % Tuesday
+    \textbf{7:00am-8:00} \daysep Female and male athletics - training on the courts  \\[3pt]
+    \textbf{9am-11am} \daysep Ec.Dif. -C102 \\[3pt]
+    \textbf{11:30am-13:30am} \daysep Distributed Systems - B104 \\[3pt]
+    \textbf{13:30am-2:30pm} \daysep Dinner-Cafeteria \\[3pt]
+}
+\day{}{ % Wednesday
+\textbf{7am-9am} \daysep English - F002 \\[3pt]
+\textbf{9am-11am} \daysep Knowledge-based systems - B104 \\[3pt]
+\textbf{11:30am-13:30pm} \daysep Networks and telecommunications - B104 \\[3pt]
+\textbf{14:30pm-16:30pm} \daysep Descriptive and inferential statistics - B104 \\[3pt]
+\textbf{17:00pm-19:00pm} \daysep Women's and men's basketball - Training on the courts \\[3pt]
+}
+\day{}{ % Thursday
+\textbf{7:00am-8:00am} \daysep Female and male athletics - Training on the courts \\[3pt]
+\textbf{9am-11am} \daysep differential equations
+ - C003 \\[3pt]
+\textbf{11:30am-13:30pm} \daysep Distributed Systems - B104 \\[3pt]
+\textbf{14:00pm-15:00pm} \daysep Distributed Database \\[3pt]
+}
+\day{}{ % Friday
+\textbf{7:00am-9:00am} \daysep English Class - F002\\[3pt]
+\textbf{9:00am-11:00am} \daysep Knowledge-Based Systems - B104 \\[3pt]
+\textbf{11:30 am-13:30pm} \daysep Networks and Telecommunications - B104 \\[3pt]
+\textbf{14:30pm-16:30pm} \daysep Descriptive and inferential statistics - B104\\[3pt]
+\textbf{17:00pm-19:00pm} \daysep Women's and men's basketball - Training on the courts \\[3pt]
+\textbf{19:00pm-21:00pm} \daysep Gym \\[3pt]
+}
+\day{}{ % Saturday
+\textbf{8:00am-10:00am} \daysep Critical Thinking - Aula Magna B \\[3pt]
+\textbf{9:00am-11:00m} \daysep Distributed Databases  - B104 \\[3pt]
+\textbf{16:00am-18:00pm} \daysep Capoeria -  Multi-Purpose Classroom Ground floor of the cafeteria\\[3pt]
+\textbf{18:00pm-20:00pm} \daysep Gym \\[3pt]
+}
+\day{}{ % Sunday
+\textbf{13:00pm-17:00pm} \daysep Lecture\\[3pt]
+}
+ 
+\finishCalendar
+\end{calendar}
+
+Wed free all day
+12-4 with break at 2
+Fri 2-3
+Sat 12-3
+
+8 hours a week
+10 weeks that is total of 80 hours
+
+Christmas holiday 8th dec sat - mon 7 jan
+Mon tue, thu, fri, sat 12-2, 3-5
+20 hours a week 
+4 weeks
+80 hours
+
+160 hours so far
+
+Term 2
+Wed 12-4
+Fri 12-4
+Sat 12-4
+
+12 a week
+120 hours
+
+Total so far 280 hours 
+Easter
+3 weeks available
+Mon tue, thu, fri, sat 12-2, 3-5
+20 hours a week 
+4 weeks
+80 hours
+
+360 hours planned
+
+Easter 16 march - wed 24 april 
+~5 weeks - 3 productive weeks includ tour and holiday
+Mon, tue, thu, fri,sat
+
+
+
+
 
 \section{Risk Assessment}
 
