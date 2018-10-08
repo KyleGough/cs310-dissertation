@@ -4,6 +4,9 @@
 \usepackage{calendar} % For timetable object.
 \usepackage{multicol} % For multi-column sections.
 \usepackage[left=2cm, right=3cm, top=2cm]{geometry} % For setting page margins.
+\usepackage{url}
+\usepackage{biblatex}
+\addbibresource{references.bib}
 
 \title{CS310 Dissertation - Using Swarm AI to map a Cave Network}
 \author{Kyle Gough}
@@ -13,11 +16,13 @@
 
 \maketitle
 
-\tableofcontents
-
 \section{Background and Introduction}
 
-Many unexplored caverns and mine-shafts are dangerous for human exploration due to various factors such as flooding, heat, tight spaces, harmful gases and instability. A safer and risk-free method would be to employ a fleet of autonomous flying drones. The drones will use Swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths and avoid crowding by splitting up wherever possible to increase the efficiency of the exploration. This project aims to identify and simulate the specific behaviours required to increase the efficiency of cave exploration.
+Cave exploration is high-effort, time-consuming and potentially dangerous to humans. This is due to such factors as flooding, hypothermia, tight spaces, falling rocks, or harmful gases and particulates such as histoplasmosis from animal droppings \cite{Histoplasmosis}. Some caves in particular are too extensive to fully map and are constantly being further explored which is the case for the Mammoth cave in Kentucky, USA the largest cave network on Earth which contains over 400 miles of cave \cite{Mammoth}.
+
+A proposed safer and risk-free method of cave exploration and mapping is to employ a fleet of autonomous flying drones. The drones will use swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths. The drones will avoid crowding by splitting at junctions to increase exploration efficiency. Communication protocols will be employed to exchange exploration information to minimise mapping duplication and help decide where to explore. Additionally this project is not solely limited to cave exploration, it may be modified to have applications with other real world problems such as: mass deliveries, @@@, @@@, @@@, and @@@.
+
+%OLD: Many unexplored caverns and mine-shafts are dangerous for human exploration due to various factors such as flooding, heat, tight spaces, harmful gases and instability. A safer and risk-free method would be to employ a fleet of autonomous flying drones. The drones will use Swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths and avoid crowding by splitting up wherever possible to increase the efficiency of the exploration. This project aims to identify and simulate the specific behaviours required to increase the efficiency of cave exploration.
 
 \section{Current Hardware and Software}
 
@@ -25,13 +30,13 @@ Many unexplored caverns and mine-shafts are dangerous for human exploration due 
 \begin{quote}
     Commonwealth Scientific and Industrial Research Organisation
 \end{quote}
-Zebedee is a hand-held device which contains a laser scanner in constant rotation. A human operator holds the device whilst traversing an area and the signals received from the device can be used to create a map of the surrounding area. It allows the creation of a complex and detailed map of the area, however it is restricted by the speed and reachability of the human operator in the environment.
+Zebedee is a hand-held device which contains a laser scanner in constant rotation. A human operator holds the device whilst traversing an area and the signals received from the device can be used to create a map of the surrounding area. It allows the creation of a complex and detailed map of the area, however it is restricted by the speed and reachability of the human operator in the environment \cite{Zebedee}. The human operator is at risk of all the dangers of cave exploration.
 
 \subsection*{Hovermap}
 \begin{quote}
     Commonwealth Scientific and Industrial Research Organisation
 \end{quote}
-Hovermap is an attached to hover drones which uses LIDAR technology to map the entire surrounding environment. It is similar to Zebedee but isn't required to be held and is not restricted by human speed or reach-ability of the environment. The hovermap is not yet capable of interacting with other similar drones to increase exploration efficiency.
+Hovermap is an attached to hover drones which uses LIDAR technology to map the entire surrounding environment. It is similar to Zebedee but isn't required to be held and is not restricted by human speed or reach-ability of the environment. The hovermap is not yet capable of interacting with other similar drones to increase exploration efficiency \cite{Hovermap}.
 
 \section{Objectives}
 
@@ -56,7 +61,7 @@ Hovermap is an attached to hover drones which uses LIDAR technology to map the e
         \item Communicate with nearby drones and exchange exploration information.
         \item Identify possible unexplored areas.
         \item Decide the best path to take to explore an unexplored section.
-    \end{list}
+    \end{list} 
     
     \item Drones should aim to scan the entire cave network. In instances of multiple drones they should work together to map the cave efficiently by:
     \begin{list}{$\circ$}{}
@@ -92,16 +97,17 @@ Hovermap is an attached to hover drones which uses LIDAR technology to map the e
     \item Use machine learning to predict where other drones may have explored in the absence of other drones being nearby to exchange information.
 \end{itemize}
 
-\section{Methods}
+\section{Methodology}
+Agile
 
 \section{Testing}
+Unit tests
 
 \section{Timetable}
 
 Below is the schedule for the hours per week dedicated to the project. Currently 345 hours have been allocated to the project, exceeding the recommended 300 hours. This is to accommodate any unforeseen circumstances that may occur such as: illness or holidays. A larger workload per week has been allocated to the Christmas break (120 hours) and term 2 (120 hours) because I have 4 modules in term 1 and only 2 modules in term 2. Additionally Easter break is being partially reserved for exam revision.
 
 % \input{timetable.tex}
-
 
 \begin{multicols*}{2}
 \begin{flushleft}
@@ -151,15 +157,21 @@ The following Gantt chart showcases the different stages of the project and a gu
 \section{Risk Assessment}
 Illness is a highly potential risk that could occur at any stage of production and can severely slow down progress. Currently the schedule offers more dedicated hours to the project than the recommended amount to account for this risk. Additionally the project is solely dependant on software libraries, and the chosen graphics engine. The risks include the lack of software updates provided by the creator. Using the libraries and engines at a lower version if required will mitigate this risk.
 
+\section{Legal, Social and Ethical and Professional Issues}
+This project will require no dependencies with other people, therefore there are no issues to consider.
+
+
 \section{Resources}
 
 \begin{itemize}
     \item Git - For version control of the software and resources.
     \item Github - For storing the git repository remotely. Provides online version control and backups.
-    \item Unity - For visualisation of the cavern environment and simulating the navigating drones.
-    \item C\#
+    \item Unity - Game engine with strong graphics capabilities for simulations. For visualisation of the cavern environment and simulating the navigating drones.
+    \item C\# - Programming language used in parallel with Unity to create a simulation.
+    \item OpenGL - API for 2D and 3D vector graphics. For visualisation of the cavern environment.
+    \item C++ - Programming language used in parallel with OpenGL to create a simulation.
 \end{itemize}
 
-\section{References}
+\printbibliography
 
 \end{document}
