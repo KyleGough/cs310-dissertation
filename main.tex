@@ -6,6 +6,7 @@
 \usepackage[left=2cm, right=3cm, top=2cm]{geometry} % For setting page margins.
 \usepackage{url}
 \usepackage{fancyhdr}
+\usepackage{enumitem}
 \pagestyle{fancy}
 \lhead{Kyle Gough}
 \usepackage{biblatex}
@@ -19,9 +20,10 @@
 
 \maketitle
 
-\section{Background and Introduction}
+\section{Introduction and Motivation}
 
-Cave exploration is high-effort, time-consuming and potentially dangerous to humans. This is due to such factors as flooding, hypothermia, tight spaces, falling rocks, or harmful gases and particulates such as histoplasmosis from animal droppings \cite{Histoplasmosis}. Some caves in particular are too extensive to fully map and are constantly being further explored which is the case for the Mammoth cave in Kentucky, USA the largest cave network on Earth which contains over 400 miles of cave \cite{Mammoth}. A proposed safer and risk-free method of cave exploration and mapping is to employ a fleet of autonomous flying drones. The drones will use swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths. The drones will avoid crowding by splitting at junctions to increase exploration efficiency. Communication protocols will be employed to exchange exploration information to minimise mapping duplication and help decide where to explore. Additionally this project is not solely limited to cave exploration, it may be modified to have applications with other real world problems such as: mass deliveries, @@@, @@@, @@@, and @@@.
+Cave exploration is high-effort, time-consuming and potentially dangerous to humans. This is due to such factors as flooding, hypothermia, tight spaces, falling rocks, or harmful gases and particulates such as histoplasmosis from animal droppings \cite{Histoplasmosis}. Some caves in particular are too extensive to fully map and are constantly being further explored which is the case for the Mammoth cave in Kentucky, USA the largest cave network on Earth which contains over 400 miles of cave \cite{Mammoth}. This project aims to propose a safer and risk-free method of cave exploration and mapping by employing a fleet of autonomous flying drones. The drones will use swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths. The drones will avoid crowding by splitting at junctions to increase exploration efficiency. Communication protocols will be employed to exchange exploration information to minimise mapping duplication and help decide where to explore. This project will generate realistic cave environments and simulate drone behaviour on them for them to eventually be used in the real world.
+Additionally this project is not solely limited to cave exploration, it may be modified to have applications with other real world problems such as: mass deliveries, rescue operations, and for the agriculture sector in planning the harvesting of crops.
 
 %OLD: Many unexplored caverns and mine-shafts are dangerous for human exploration due to various factors such as flooding, heat, tight spaces, harmful gases and instability. A safer and risk-free method would be to employ a fleet of autonomous flying drones. The drones will use Swarm AI to avoid contact with each other and the cavern walls whilst simultaneously identifying potential unexplored paths and avoid crowding by splitting up wherever possible to increase the efficiency of the exploration. This project aims to identify and simulate the specific behaviours required to increase the efficiency of cave exploration.
 
@@ -33,21 +35,28 @@ Zebedee is a hand-held device which contains a laser scanner in constant rotatio
 \pagebreak[4] %###
 
 \subsection*{Hovermap - CSIRO}
-Hovermap is an attached to hover drones which uses LIDAR technology to map the entire surrounding environment. It is similar to Zebedee but isn't required to be held and is not restricted by human speed or reach-ability of the environment. The hovermap is not yet capable of interacting with other similar drones to increase exploration efficiency \cite{Hovermap}.
+Hovermap is an attached to hover drones which uses LIDAR technology to map the entire surrounding environment. It is similar to Zebedee but is not required to be held and is not restricted by human speed or reachability of the environment. The hovermap is not yet capable of interacting with other similar drones to increase exploration efficiency \cite{Hovermap}.
 
 \section{Objectives}
+The objects of the project can be split into three main sections.
+\begin{enumerate}[label=(\roman*)]
+  \item Cave environment generator.
+  \item Independent pathing, collision avoidance and mapping of a single drone.
+  \item Teamwork with other drones, unexplored area predictions.
+\end{enumerate}
 
 \begin{enumerate}
-    \item Create a 2D cave environment generator that is customisable and reproducible. The produced environment should be suitable for simulations to utilise. Some factors of the cave which may wish to be customisable include:
+    \item Create a 2D cave environment generator that is customisable, reproducible and realistic. The produced environment should be suitable for simulations to utilise. Some factors of the cave which may wish to be customisable include:
     \begin{list}{$\circ$}{}
         \item Size of open areas.
         \item Size of tunnel areas.
         \item Frequency of open areas.
         \item Total area/volume of open space.
         \item Length of cavern sections.
-        \item Stalagmites, stalactites and other natural cave formations.
+        \item Stalagmites, stalactites and pillars where stalagmites and stalactites have joined together.
         \item Cavern wall textures.
     \end{list}
+    Properties of the cave should abide by real life cave properties such as having stalactites and stalagmites occur in pairs, where stalagmites are generally larger and wider than their corresponding stalactite.
     
     \item Create a simulation of a drone which can:
     \begin{list}{$\circ$}{}
@@ -77,7 +86,7 @@ Hovermap is an attached to hover drones which uses LIDAR technology to map the e
     
     \item The final simulation should convey useful information and statistics such as:
     \begin{list}{$\circ$}{}
-        \item Total time taken to explore all areas on the cave.
+        \item Total time taken to explore all areas of the cave.
         \item Path taken by each individual drone.
         \item Ratio of explored areas to unexplored areas mapped over time.
         \item Area/Volume of unexplored areas identified by each individual drone.
@@ -117,38 +126,10 @@ Below is the schedule for the hours per week dedicated to the project. Currently
 \begin{flushleft}
 
     \begin{itemize}
-        \item Term 1 - 1st Oct - 7th Dec
-       \begin{list}{$\circ$}{}
-            %\item Wednesday 12:00pm-2:00pm, 2:30pm-4:30pm
-            %\item Friday 2:00pm-3:00pm
-            %\item Sun 12:00pm-3:00pm
-            \item \textit{Hours/week: 8, Total Hours: 80}
-        \end{list}
-        \item Christmas Break - 8th Dec - 6th Jan
-         \begin{list}{$\circ$}{}
-            %\item Monday 12:00pm-2:30pm, 3:00pm-5:30pm
-            %\item Tuesday 12:00pm-2:30pm, 3:00pm-5:30pm
-            %\item Thursday 12:00pm-2:30pm, 3:00pm-5:30pm
-            %\item Friday 12:00pm-2:30pm, 3:00pm-5:30pm
-            %\item Saturday 12:00pm-2:30pm, 3:00pm-5:30pm
-            \item \textit{Hours/week: 25, Total Hours: 100}
-        \end{list}
-        %\vfill\null
-        \columnbreak
-        \item Term 2 - 7th Jan - 16th Mar
-         \begin{list}{$\circ$}{}
-            %\item Wednesday 12:00pm-4:00pm
-            %\item Friday 12:00pm-4:00pm
-            %\item Sunday 12:00pm-4:00pm
-            \item \textit{Hours/week: 12, Total Hours: 120}
-        \end{list}
-        \item Easter Break - 17th Mar - 23rd Apr
-         \begin{list}{$\circ$}{}
-            %\item Monday 12pm-2:30pm, 3:00pm-5:30pm
-            %\item Wednesday 12pm-2:30pm, 3:00pm-5:30pm
-            %\item Friday 12pm-2:30pm, 3:00pm-5:30pm
-            \item \textit{Hours/week: 15, Total Hours: 45}
-        \end{list}
+        \item \textbf{Term 1 (1st Oct - 7th Dec)} - \textit{Hours/week: 8, Total Hours: 80}
+        \item \textbf{Christmas Break (8th Dec - 6th Jan)} - \textit{Hours/week: 25, Total Hours: 100}
+        \item \textbf{Term 2 (7th Jan - 16th Mar)} - \textit{Hours/week: 12, Total Hours: 120}
+        \item \textbf{Easter Break (17th Mar - 23rd Apr)} - \textit{Hours/week: 15, Total Hours: 45}
     \end{itemize}
 
 \end{flushleft}
@@ -164,9 +145,9 @@ The following Gantt chart showcases the different stages of the project and a gu
 Here is a list of identified risks and proposed solutions to mitigate them if required.
 
 \begin{itemize}
-    \item Risk 1: Illness is a highly potential risk that could occur at any stage of production and can severely slow down progress. Solution 1: Currently the schedule offers more dedicated hours to the project than the recommended amount to account for this risk.
-    \item Risk 2: The project is solely dependant on software libraries, and the chosen graphics engine. The risks include the lack of software updates provided by the creator. Using the libraries and engines at a lower version if required will mitigate this risk.
-    \item Risk 3: This will be my first project using C++, therefore I may run into errors not yet experienced and will have a slower production rate than other languages I am more familiar with. If the use of C++ becomes too troublesome I can switch to C\# with Unity which I have more familiarity with.
+    \item \textbf{Risk 1}: Illness is a highly potential risk that could occur at any stage of production and can severely slow down progress. Solution 1: Currently the schedule offers more dedicated hours to the project than the recommended amount to account for this risk.
+    \item \textbf{Risk 2}: The project is solely dependant on software libraries, and the chosen graphics engine. The risks include the lack of software updates provided by the creator. Using the libraries and engines at a lower version if required will mitigate this risk.
+    \item \textbf{Risk 3}: This will be my first project using C++, therefore I may run into errors not yet experienced and will have a slower production rate than other languages I am more familiar with. If the use of C++ becomes too troublesome I can switch to C\# with Unity which I have more familiarity with.
 \end{itemize}
 
 \section{Legal, Social and Ethical and Professional Issues}
@@ -177,12 +158,22 @@ This project will require no dependencies with other people, therefore there are
 \section{Resources}
 
 \begin{itemize}
-    \item Git - For version control of the software and resources.
-    \item Github - For storing the git repository remotely. Provides online version control and backups.
-    \item Unity - Game engine with strong graphics capabilities for simulations. For visualisation of the cavern environment and simulating the navigating drones.
-    \item C\# - Programming language used in parallel with Unity to create a simulation.
-    \item OpenGL - API for 2D and 3D vector graphics. For visualisation of the cavern environment.
-    \item C++ - Programming language used in parallel with OpenGL to create a simulation.
+    \item \textbf{Git} - For version control of the software and resources. To track updates and provide rollback if a recent software version encounters an error.
+    \item \textbf{Github} - For storing the git repository remotely. Provides online version control and backups of the project.
+    \item \textbf{Unity} - Game engine with strong graphics capabilities for simulations. For visualisation of the cavern environment and simulating the navigating drones.
+    \item \textbf{C\#} - Object-orientated programming language used in parallel with Unity to create a simulation.
+    \item \textbf{OpenGL} - API for 2D and 3D vector graphics. For visualisation of the cavern environment.
+    \item \textbf{C++} - Object-orientated programming language used in parallel with OpenGL to create a simulation.
+\end{itemize}
+
+\section{Glossary}
+
+\begin{itemize}
+    \item \textbf{LIDAR} - records the distance to an object by sending a pulsed laser light and measuring the reflected pulses with a sensor. 
+    \item \textbf{CSIRO} - Commonwealth Scientific and Industrial Research Organisation
+    \item \textbf{BOIDS} - Program developed by Craig Reynolds which simulates the flocking behaviour of birds.
+    \item \textbf{Stalagmite} - Rock formation that occurs on the ground and rises up.
+    \item \textbf{Stalactite} - Rock formation that occurs on the cave ceiling.
 \end{itemize}
 
 \printbibliography
