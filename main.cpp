@@ -9,11 +9,13 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
-#include "SimplexNoise.h"
+
+#include "SimplexNoise.h" //Perlin Noise.
+#include "Draw.h" //Draw functions.
 using namespace std;
 
 const int caveWidth = 250; //Number of cells making the width of the cave.
-const int caveHeight = 250; //Number of cells making the height of the cave.
+const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
 
 //Generation Parameters.
@@ -33,7 +35,7 @@ int nextCave[caveHeight][caveWidth];
 float cameraZoom = 0.33f;
 float cameraPanX = 0.0f;
 float cameraPanY = 0.0f;
-float cameraFOV = 40.0f; //Field of View.
+float cameraFOV = 100.0f; //Field of View.
 
 //Using a random number uses the chance to threshold the number.
 bool thresholdRandom(int chance) {
@@ -93,7 +95,6 @@ void idle() {
 	//glutPostRedisplay();
 }
 
-
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -111,14 +112,9 @@ void display()
 
 	float depth = -1.0f; //###
 
-	//Draw Background.
-	glColor3f(0.3f, 0.2f, 0.3f);
-	glBegin(GL_POLYGON);
-	glVertex3f(0, 0, depth);
-	glVertex3f(caveWidth, 0, depth);
-	glVertex3f(caveWidth, caveHeight, depth);
-	glVertex3f(0, caveHeight, depth);
-	glEnd();
+	//Draws Cave Background and Border.
+	Draw::drawBackground(depth, caveWidth, caveHeight);
+	Draw::drawBorder(depth, caveWidth, caveHeight);
 
 	//Draw Cave.
 	glColor3f(1.0f, 1.0f, 1.0f);
@@ -140,40 +136,64 @@ void display()
 				glEnd();
 
 				glColor3f(0.3f, 0.3f, 0.3f);
+
+				bool top = currentCave[j+1][i] == 1;
+				bool left = currentCave[j][i-1] == 1;
+				bool bottom = currentCave[j-1][i] == 1;
+				bool right = currentCave[j][i+1] == 1;
+				int occupiedNeighbourCount = currentCave[j+1][i] + currentCave[j][i-1] + currentCave[j-1][i] + currentCave[j][i+1];
+
+				if (occupiedNeighbourCount == 2) {
+
+				}
+				else {
+
+				}
+
+				//Vertices.
+				float tl[3] = {-0.5f, 0.5f, 0};
+				float tl_d[3] = {-0.5f, 0.5f, depth};
+				float tr[3] = {0.5f, 0.5f, 0};
+				float tr_d[3] = {0.5f, 0.5f, depth};
+				float bl[3] = {-0.5f, -0.5f, 0};
+				float bl_d[3] = {-0.5f, -0.5f, depth};
+				float br[3] = {0.5f, -0.5f, 0};
+				float br_d[3] = {0.5f, -0.5f, depth};
+
 				//Depth Face: Top.
 				if (currentCave[j+1][i] == 1) {
 					glBegin(GL_POLYGON);
-					glVertex3f(0.5f, 0.5f, 0);
-					glVertex3f(-0.5f, 0.5f, 0);
-					glVertex3f(-0.5f, 0.5f, depth);
-					glVertex3f(0.5f, 0.5f, depth);
+					glVertex3fv(tr);
+					glVertex3fv(tl);
+					glVertex3fv(tl_d);
+					glVertex3fv(tr_d);
 					glEnd();
 				}
 				//Depth Face: Left.
 				if (currentCave[j][i-1] == 1) {
 					glBegin(GL_POLYGON);
-					glVertex3f(-0.5f, -0.5f, 0);
-					glVertex3f(-0.5f, 0.5f, 0);
-					glVertex3f(-0.5f, 0.5f, depth);
-					glVertex3f(-0.5f, -0.5f, depth);
+					glVertex3fv(bl);
+					glVertex3fv(tl);
+					glVertex3fv(tl_d);
+					glVertex3fv(bl_d);
 					glEnd();
 				}
 				//Depth Face: Bottom.
 				if (currentCave[j-1][i] == 1) {
 					glBegin(GL_POLYGON);
-					glVertex3f(0.5f, -0.5f, 0);
-					glVertex3f(-0.5f, -0.5f, 0);
-					glVertex3f(-0.5f, -0.5f, depth);
-					glVertex3f(0.5f, -0.5f, depth);
+					glVertex3fv(br);
+					glVertex3fv(bl);
+					glVertex3fv(bl_d);
+					glVertex3fv(br_d);
 					glEnd();
 				}
 				//Depth Face: Right.
 				if (currentCave[j][i+1] == 1) {
 					glBegin(GL_POLYGON);
-					glVertex3f(0.5f, -0.5f, 0);
-					glVertex3f(0.5f, 0.5f, 0);
-					glVertex3f(0.5f, 0.5f, depth);
-					glVertex3f(0.5f, -0.5f, depth);
+					glVertex3fv(br);
+					glVertex3fv(tr);
+					glVertex3fv(tr_d);
+					glVertex3fv(br_d);
 					glEnd();
 				}
 
@@ -182,26 +202,25 @@ void display()
 		}
 	}
 
-
 	glPopMatrix();
 	glutSwapBuffers();
 }
 
+//Reshapes the view window.
 void reshape(int w, int h) {
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(cameraFOV, (GLdouble)w / (GLdouble)h, 0.1f, 250.0f);
-	//###glOrtho(-20, 20, -20, 20, -40, 40);
 }
 
 //Mouse event functions.
 void mouseInput(int button, int state, int x, int y) {
 	switch (button) {
 		//Scroll Up / Zoom Out.
-		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; break;
+		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 5.0f; break;
 		//Scroll Down / Zoom In.
-		case 4: cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; break;
+		case 4: cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 5.0f; break;
 	}
 
 	//Reshapes the display.
