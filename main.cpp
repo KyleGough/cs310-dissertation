@@ -20,7 +20,7 @@ const int border = 3; //Padding of the cave border on the x-axis.
 
 //Generation Parameters.
 const int smoothIterations = 10;
-const int fillPercentage = 50; //Percentage of the randomised environment that will be filled.
+const int fillPercentage = 45; //Percentage of the randomised environment that will be filled.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
 const int deathChance = 75;
@@ -33,9 +33,13 @@ int nextCave[caveHeight][caveWidth];
 
 //Camera.
 float cameraZoom = 0.33f;
-float cameraPanX = 0.0f;
-float cameraPanY = 0.0f;
+float cameraPanX = 0.0f; //Camera translation along the x-axis.
+float cameraPanY = 0.0f; //Camera translation along the y-axis.
 float cameraFOV = 100.0f; //Field of View.
+
+//Colours.
+float caveFaceColour[3] = {0.3f, 0.2f, 0.4f};
+float caveDepthColour[3] = {0.3f, 0.3f, 0.3f};
 
 //Using a random number uses the chance to threshold the number.
 bool thresholdRandom(int chance) {
@@ -51,7 +55,7 @@ void randomiseCave() {
 				nextCave[y][x] = 0;
 			}
 			else {
-				float noise = SimplexNoise::noise(x, y);   // Get the noise value for the coordinate
+				float noise = SimplexNoise::noise(x, y); //Gets the noise value for the coordinate.
 				currentCave[y][x] = (noise <= 0.0f) ? 0 : 1;
 				//###currentCave[y][x] = thresholdRandom(fillPercentage) ? 0 : 1; //Cave body.
 			}
@@ -105,7 +109,7 @@ void display()
 	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
 
 	//###DEBUG.
-	std::cout << "Pan_x: " << cameraPanX << " ~ Pan_y: " << cameraPanY << " ~ FOV: " << cameraFOV << std::endl;
+	cout << "Pan_x: " << cameraPanX << " ~ Pan_y: " << cameraPanY << " ~ FOV: " << cameraFOV << endl;
 
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
@@ -123,32 +127,16 @@ void display()
 		for (int j = 0; j < caveHeight; j++) { //For each cave row.
 			if (currentCave[j][i] == 0) { //If cell is free.
 				glPushMatrix();
-				//Translate here.
+
+				//Translate to cell position.
 				glTranslatef((float)i, (float)j, 0);
-
-				//Camera-Viewing polygon face.
-				glColor3f(0.3f, 0.2f, 0.4f);
-				glBegin(GL_POLYGON);
-				glVertex3f(0.5f, 0.5f, 0);
-				glVertex3f(0.5f, -0.5f, 0);
-				glVertex3f(-0.5f, -0.5f, 0);
-				glVertex3f(-0.5f, 0.5f, 0);
-				glEnd();
-
-				glColor3f(0.3f, 0.3f, 0.3f);
+				glColor3fv(caveFaceColour);
 
 				bool top = currentCave[j+1][i] == 1;
 				bool left = currentCave[j][i-1] == 1;
 				bool bottom = currentCave[j-1][i] == 1;
 				bool right = currentCave[j][i+1] == 1;
 				int occupiedNeighbourCount = currentCave[j+1][i] + currentCave[j][i-1] + currentCave[j-1][i] + currentCave[j][i+1];
-
-				if (occupiedNeighbourCount == 2) {
-
-				}
-				else {
-
-				}
 
 				//Vertices.
 				float tl[3] = {-0.5f, 0.5f, 0};
@@ -160,41 +148,89 @@ void display()
 				float br[3] = {0.5f, -0.5f, 0};
 				float br_d[3] = {0.5f, -0.5f, depth};
 
-				//Depth Face: Top.
-				if (currentCave[j+1][i] == 1) {
+				if (occupiedNeighbourCount == 2 && ((top && right) || (bottom && left))) {
+					//Camera-Viewing polygon face.
+					glColor3fv(caveFaceColour);
 					glBegin(GL_POLYGON);
-					glVertex3fv(tr);
 					glVertex3fv(tl);
-					glVertex3fv(tl_d);
-					glVertex3fv(tr_d);
-					glEnd();
-				}
-				//Depth Face: Left.
-				if (currentCave[j][i-1] == 1) {
-					glBegin(GL_POLYGON);
-					glVertex3fv(bl);
-					glVertex3fv(tl);
-					glVertex3fv(tl_d);
-					glVertex3fv(bl_d);
-					glEnd();
-				}
-				//Depth Face: Bottom.
-				if (currentCave[j-1][i] == 1) {
-					glBegin(GL_POLYGON);
 					glVertex3fv(br);
-					glVertex3fv(bl);
-					glVertex3fv(bl_d);
+					top ? glVertex3fv(bl) : glVertex3fv(tr);
+					glEnd();
+
+					glColor3fv(caveDepthColour);
+					//Depth face.
+					glBegin(GL_QUAD_STRIP);
+					glVertex3fv(tl);
+					glVertex3fv(tl_d);
+					glVertex3fv(br);
 					glVertex3fv(br_d);
 					glEnd();
 				}
-				//Depth Face: Right.
-				if (currentCave[j][i+1] == 1) {
+				else if (occupiedNeighbourCount == 2 && ((right && bottom) || (left && top))) {
+					//Camera-Viewing polygon face.
+					glColor3fv(caveFaceColour);
 					glBegin(GL_POLYGON);
-					glVertex3fv(br);
+					glVertex3fv(tr);
+					glVertex3fv(bl);
+					bottom ? glVertex3fv(tl) : glVertex3fv(br);
+					glEnd();
+
+					glColor3fv(caveDepthColour);
+					//Depth face.
+					glBegin(GL_QUAD_STRIP);
 					glVertex3fv(tr);
 					glVertex3fv(tr_d);
-					glVertex3fv(br_d);
+					glVertex3fv(bl);
+					glVertex3fv(bl_d);
 					glEnd();
+				}
+				else {
+					//Camera-Viewing polygon face.
+					glColor3fv(caveFaceColour);
+					glBegin(GL_POLYGON);
+					glVertex3f(0.5f, 0.5f, 0);
+					glVertex3f(0.5f, -0.5f, 0);
+					glVertex3f(-0.5f, -0.5f, 0);
+					glVertex3f(-0.5f, 0.5f, 0);
+					glEnd();
+
+					glColor3fv(caveDepthColour);
+					//Depth Face: Top.
+					if (currentCave[j+1][i] == 1) {
+						glBegin(GL_POLYGON);
+						glVertex3fv(tr);
+						glVertex3fv(tl);
+						glVertex3fv(tl_d);
+						glVertex3fv(tr_d);
+						glEnd();
+					}
+					//Depth Face: Left.
+					if (currentCave[j][i-1] == 1) {
+						glBegin(GL_POLYGON);
+						glVertex3fv(bl);
+						glVertex3fv(tl);
+						glVertex3fv(tl_d);
+						glVertex3fv(bl_d);
+						glEnd();
+					}
+					//Depth Face: Bottom.
+					if (currentCave[j-1][i] == 1) {
+						glBegin(GL_POLYGON);
+						glVertex3fv(br);
+						glVertex3fv(bl);
+						glVertex3fv(bl_d);
+						glVertex3fv(br_d);
+						glEnd();
+					}
+					//Depth Face: Right.
+					if (currentCave[j][i+1] == 1) {
+						glBegin(GL_POLYGON);
+						glVertex3fv(br);
+						glVertex3fv(tr);
+						glVertex3fv(tr_d);
+						glVertex3fv(br_d);
+						glEnd();
+					}
 				}
 
 				glPopMatrix();
@@ -237,6 +273,9 @@ void keyboardInput(unsigned char key, int, int) {
 		case '[': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; cameraPanX *= cameraFOV; break; //###
 		//Zoom In.
 		case ']': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; cameraPanX *= cameraFOV; break; //###
+		//Randomise Cave. Also resets if already set.
+		case 'r':
+		case 'R': randomiseCave(); break;
 		//Smooth 1 Iteration.
 		case ' ':
 			smoothCave();
