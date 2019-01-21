@@ -14,6 +14,8 @@
 #include "Draw.h" //Draw functions.
 using namespace std;
 
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
@@ -40,6 +42,8 @@ float cameraFOV = 100.0f; //Field of View.
 //Colours.
 float caveFaceColour[3] = {0.3f, 0.2f, 0.4f};
 float caveDepthColour[3] = {0.3f, 0.3f, 0.3f};
+
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Using a random number uses the chance to threshold the number.
 bool thresholdRandom(int chance) {
@@ -93,14 +97,14 @@ void smoothCave() {
 	}
 }
 
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
 	//usleep(2500); // in microseconds
 	//glutPostRedisplay();
 }
 
-void display()
-{
+void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
