@@ -12,9 +12,6 @@
 #include "SimplexNoise.h"
 using namespace std;
 
-//###
-//g++ -o main main.cpp SimplexNoise.cpp -I -L/usr/X11R6/lib -lglut -lGL -lGLU -lX11 -lm -lpng -lpthread
-
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 250; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
@@ -33,9 +30,10 @@ int nextCave[caveHeight][caveWidth];
 //Cave 1: FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
 
 //Camera.
-float cameraZoom = 1.0f;
+float cameraZoom = 0.33f;
 float cameraPanX = 0.0f;
 float cameraPanY = 0.0f;
+float cameraFOV = 40.0f; //Field of View.
 
 //Using a random number uses the chance to threshold the number.
 bool thresholdRandom(int chance) {
@@ -44,21 +42,15 @@ bool thresholdRandom(int chance) {
 
 void randomiseCave() {
 
-	for (int y = 0; y < caveHeight; y++) {
-		for (int x = 0; x < caveWidth; x++) {
+	for (int y = 0; y < caveHeight; y++) { //For each column in the cave.
+		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
 			if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
 				currentCave[y][x] = 0; //Cave border.
 				nextCave[y][x] = 0;
 			}
 			else {
-				float z = 0.123f; // Define a float coordinate
-    		float noise = SimplexNoise::noise(x, y);   // Get the noise value for the coordinate
-
-				currentCave[y][x] = (noise <= 0) ? 0 : 1;
-				std::cout << noise << std::endl;
-
-				(void)noise;
-				//currentCave[y][x] = SimplexNoise::noise(x, y);
+				float noise = SimplexNoise::noise(x, y);   // Get the noise value for the coordinate
+				currentCave[y][x] = (noise <= 0.0f) ? 0 : 1;
 				//###currentCave[y][x] = thresholdRandom(fillPercentage) ? 0 : 1; //Cave body.
 			}
 		}
@@ -83,13 +75,13 @@ void smoothCave() {
 		for (int x = border; x < caveWidth - border; x++) {
 			int neighbours = getNeighbourCount(x, y);
 			if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
-				nextCave[y][x] = 1;
+				nextCave[y][x] = 1; //Cell is born.
 			}
 			else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
-				nextCave[y][x] = 0;
+				nextCave[y][x] = 0; //Cell dies.
 			}
 			else {
-				nextCave[y][x] = currentCave[y][x];
+				nextCave[y][x] = currentCave[y][x]; //Maintains the cell state.
 			}
 		}
 	}
@@ -108,32 +100,83 @@ void display()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glScalef(cameraZoom, cameraZoom, 1.0f);
-  glTranslatef(cameraPanX, cameraPanY, 0.0f);
-
 	//Eye Position, Reference Point, Up Vector.
-	//gluLookAt(cameraX, cameraY, 10, cameraX, cameraY, 0, 0, 1, 0);
+	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
 
-	std::cout << cameraPanX << " : " << cameraPanY << " : " << cameraZoom << std::endl;
+	//###DEBUG.
+	std::cout << "Pan_x: " << cameraPanX << " ~ Pan_y: " << cameraPanY << " ~ FOV: " << cameraFOV << std::endl;
 
 	glPushMatrix();
-	glScalef(cameraZoom, cameraZoom, 1.0f);
-
 	glDisable(GL_LIGHTING);
+
+	float depth = -1.0f; //###
+
+	//Draw Background.
+	glColor3f(0.3f, 0.2f, 0.3f);
+	glBegin(GL_POLYGON);
+	glVertex3f(0, 0, depth);
+	glVertex3f(caveWidth, 0, depth);
+	glVertex3f(caveWidth, caveHeight, depth);
+	glVertex3f(0, caveHeight, depth);
+	glEnd();
+
+	//Draw Cave.
 	glColor3f(1.0f, 1.0f, 1.0f);
 
-	for (int i = 0; i < caveWidth; i++) {
-		for (int j = 0; j < caveHeight; j++) {
-			if (currentCave[j][i] == 1) {
+	for (int i = 0; i < caveWidth; i++) { //For each cave column.
+		for (int j = 0; j < caveHeight; j++) { //For each cave row.
+			if (currentCave[j][i] == 0) { //If cell is free.
 				glPushMatrix();
 				//Translate here.
 				glTranslatef((float)i, (float)j, 0);
+
+				//Camera-Viewing polygon face.
+				glColor3f(0.3f, 0.2f, 0.4f);
 				glBegin(GL_POLYGON);
 				glVertex3f(0.5f, 0.5f, 0);
 				glVertex3f(0.5f, -0.5f, 0);
 				glVertex3f(-0.5f, -0.5f, 0);
 				glVertex3f(-0.5f, 0.5f, 0);
 				glEnd();
+
+				glColor3f(0.3f, 0.3f, 0.3f);
+				//Depth Face: Top.
+				if (currentCave[j+1][i] == 1) {
+					glBegin(GL_POLYGON);
+					glVertex3f(0.5f, 0.5f, 0);
+					glVertex3f(-0.5f, 0.5f, 0);
+					glVertex3f(-0.5f, 0.5f, depth);
+					glVertex3f(0.5f, 0.5f, depth);
+					glEnd();
+				}
+				//Depth Face: Left.
+				if (currentCave[j][i-1] == 1) {
+					glBegin(GL_POLYGON);
+					glVertex3f(-0.5f, -0.5f, 0);
+					glVertex3f(-0.5f, 0.5f, 0);
+					glVertex3f(-0.5f, 0.5f, depth);
+					glVertex3f(-0.5f, -0.5f, depth);
+					glEnd();
+				}
+				//Depth Face: Bottom.
+				if (currentCave[j-1][i] == 1) {
+					glBegin(GL_POLYGON);
+					glVertex3f(0.5f, -0.5f, 0);
+					glVertex3f(-0.5f, -0.5f, 0);
+					glVertex3f(-0.5f, -0.5f, depth);
+					glVertex3f(0.5f, -0.5f, depth);
+					glEnd();
+				}
+				//Depth Face: Right.
+				if (currentCave[j][i+1] == 1) {
+					glBegin(GL_POLYGON);
+					glVertex3f(0.5f, -0.5f, 0);
+					glVertex3f(0.5f, 0.5f, 0);
+					glVertex3f(0.5f, 0.5f, depth);
+					glVertex3f(0.5f, -0.5f, depth);
+					glEnd();
+				}
+
 				glPopMatrix();
 			}
 		}
@@ -144,14 +187,25 @@ void display()
 	glutSwapBuffers();
 }
 
+void reshape(int w, int h) {
+	glViewport(0, 0, w, h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(cameraFOV, (GLdouble)w / (GLdouble)h, 0.1f, 250.0f);
+	//###glOrtho(-20, 20, -20, 20, -40, 40);
+}
+
 //Mouse event functions.
 void mouseInput(int button, int state, int x, int y) {
 	switch (button) {
 		//Scroll Up / Zoom Out.
-		case 3: cameraZoom = (cameraZoom >= 1.0f) ? 1.0f : cameraZoom *= 1.05f; cameraPanX *= cameraZoom; break;
+		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; break;
 		//Scroll Down / Zoom In.
-		case 4: cameraZoom = (cameraZoom <= 0.25f) ? 0.25f : cameraZoom /= 1.05f; cameraPanX *= cameraZoom; break;
+		case 4: cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; break;
 	}
+
+	//Reshapes the display.
+	reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
 	glutPostRedisplay();
 }
 
@@ -161,9 +215,9 @@ void keyboardInput(unsigned char key, int, int) {
 		//Exits the program.
 		case 'q': exit(1); break;
 		//Zoom Out.
-		case '[': cameraZoom = (cameraZoom >= 1.0f) ? 1.0f : cameraZoom *= 1.05f; cameraPanX *= cameraZoom; break;
+		case '[': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; cameraPanX *= cameraFOV; break; //###
 		//Zoom In.
-		case ']': cameraZoom = (cameraZoom <= 0.25f) ? 0.25f : cameraZoom /= 1.05f; cameraPanX *= cameraZoom; break;
+		case ']': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; cameraPanX *= cameraFOV; break; //###
 		//Smooth 1 Iteration.
 		case ' ':
 			smoothCave();
@@ -176,28 +230,16 @@ void keyboardInput(unsigned char key, int, int) {
 //Special Key event functions.
 void specialKeyInput(int key, int x, int y) {
 	switch (key) {
-		case GLUT_KEY_UP:
-			cameraPanY += 1.0f / cameraZoom;
-			break;
-		case GLUT_KEY_DOWN:
-			cameraPanY -= 1.0f / cameraZoom;
-			break;
-		case GLUT_KEY_LEFT:
-			cameraPanX -= 1.0f / cameraZoom;
-			break;
-		case GLUT_KEY_RIGHT:
-			cameraPanX += 1.0f / cameraZoom;
-			break;
+		//Pan Up.
+		case GLUT_KEY_UP: cameraPanY += 0.2f * cameraFOV; break;
+		//Pan Down.
+		case GLUT_KEY_DOWN: cameraPanY -= 0.2f * cameraFOV; break;
+		//Pan Left.
+		case GLUT_KEY_LEFT: cameraPanX -= 0.2f * cameraFOV; break;
+		//Pan Right.
+		case GLUT_KEY_RIGHT: cameraPanX += 0.2f * cameraFOV; break;
 	}
 	glutPostRedisplay();
-}
-
-void reshape(int w, int h) {
-	glViewport(0, 0, w, h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	//gluPerspective(fov, (GLdouble)w / (GLdouble)h, 0.1f, 250.0f);
-	glOrtho(-20, 20, -20, 20, -40, 40);
 }
 
 void init() {
@@ -211,6 +253,7 @@ int main(int argc, char* argv[]) {
 	//Random.
 	srand(time(NULL));
 
+	//Window Properties.
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowSize(1000, 1000);
@@ -233,8 +276,9 @@ int main(int argc, char* argv[]) {
 		smoothCave();
 		memcpy(currentCave, nextCave, sizeof(currentCave));
 	}*/
+
+
 	init();
 	glutMainLoop();
-
 	return 0;
 }
