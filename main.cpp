@@ -16,57 +16,96 @@ using namespace std;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
+//Light Struct.
+struct Light {
+	size_t name;
+	float ambient[4];
+	float diffuse[4];
+	float specular[4];
+	float position[4];
+};
+
+//Global Light Source.
+const Light globalLight = {
+	GL_LIGHT0,
+	{0.08f, 0.08f, 0.08f, 1.0f},
+	{3.0f, 3.0f, 3.0f, 1.0f},
+	{0.5f, 0.5f, 0.5f, 1.0f},
+	{0.0f, 0.0f, 1.0f, 1.0f}
+};
+
+//Cave Properties.
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
 
 //Generation Parameters.
-const int smoothIterations = 10;
-const int fillPercentage = 45; //Percentage of the randomised environment that will be filled.
+int fillPercentage = 45; //Percentage of the randomised environment that will be filled.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
 const int deathChance = 75;
 const int birthChance = 100;
 
+//Simplex Noise.
+float noiseScale = 40.0f;
+float noiseOffsetX = 100.0f;
+float noiseOffsetY = 100.0f;
+
+//Cave.
 int currentCave[caveHeight][caveWidth];
 int nextCave[caveHeight][caveWidth];
 
-//Cave 1: FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
+//###Presets.
+//Cave 1 (Random): FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
+//Cave 2 (Simplex): FP: 45, Scale: 40.
+//Cave 3 (Simplex): FP: 45, Scale: 15.
+//Cave 4 (Simplex): FP: 55, Scale: 20.
 
 //Camera.
-float cameraZoom = 0.33f;
-float cameraPanX = 0.0f; //Camera translation along the x-axis.
-float cameraPanY = 0.0f; //Camera translation along the y-axis.
-float cameraFOV = 100.0f; //Field of View.
+float cameraPanX = 120.0f; //Camera translation along the x-axis.
+float cameraPanY = 90.0f; //Camera translation along the y-axis.
+float cameraFOV = 150.0f; //Field of View.
 
 //Colours.
 float caveFaceColour[3] = {0.3f, 0.2f, 0.4f};
-float caveDepthColour[3] = {0.3f, 0.3f, 0.3f};
+float caveDepthColour[3] = {0.35f, 0.25f, 0.45f};
+
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
-//Using a random number uses the chance to threshold the number.
+//Using a chance value, outputs true if a random value is smaller than the chance.
 bool thresholdRandom(int chance) {
 	return rand() % 100 < chance;
 }
 
+//Generates the initial cave using Simplex noise.
 void randomiseCave() {
 
+	//Gets a random offset value for each direction for simplex noise.
+	noiseOffsetX = rand() % 100000;
+	noiseOffsetY = rand() % 100000;
+
+	//Iterates through each cell in the cave.
 	for (int y = 0; y < caveHeight; y++) { //For each column in the cave.
 		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
 			if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
-				currentCave[y][x] = 0; //Cave border.
+				//Cave border.
+				currentCave[y][x] = 0;
 				nextCave[y][x] = 0;
 			}
 			else {
-				float noise = SimplexNoise::noise(x, y); //Gets the noise value for the coordinate.
-				currentCave[y][x] = (noise <= 0.0f) ? 0 : 1;
-				//###currentCave[y][x] = thresholdRandom(fillPercentage) ? 0 : 1; //Cave body.
+				//Maps each x,y coordinate to a scaled and offset coordinate.
+				float mappedX = (float)x / caveWidth * noiseScale + noiseOffsetX;
+				float mappedY = (float)y / caveHeight * noiseScale + noiseOffsetY;
+				//Gets the noise value for the coordinate.
+				float noise = SimplexNoise::noise(mappedX, mappedY);
+				//Thresholds the noise value into either a free or occupied cell.
+				float noiseThreshold = (fillPercentage / 50.0f) - 1.0f;
+				currentCave[y][x] = (noise <= noiseThreshold) ? 0 : 1;
 			}
 		}
 	}
 }
-
 
 int getNeighbourCount(int x, int y) {
 	int count = 0;
@@ -80,6 +119,7 @@ int getNeighbourCount(int x, int y) {
 	return count;
 }
 
+//Performs one pass of a given ruleset of cellular automata to smooth the cave.
 void smoothCave() {
 	for (int y = border; y < caveHeight - border; y++) {
 		for (int x = border; x < caveWidth - border; x++) {
@@ -99,6 +139,23 @@ void smoothCave() {
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
+//Displays the control text at the top-left of the window.
+void displayControls() {
+	float textColour[3] = {1.0f, 1.0f, 1.0f};
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'r' - Reset", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'n' - Scale Noise Up", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'m' - Scale Noise Down", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"' ' - Smooth (1 iter.)", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 240, 0.15f, (char *)"'c' - Smooth (20 iter.)", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 270, 0.15f, (char *)"'k' - Decrease Fill Percentage", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 300, 0.15f, (char *)"'l' - Increase Fill Percentage", textColour);
+}
+
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+
 void idle() {
 	//usleep(2500); // in microseconds
 	//glutPostRedisplay();
@@ -113,10 +170,14 @@ void display() {
 	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
 
 	//###DEBUG.
-	cout << "Pan_x: " << cameraPanX << " ~ Pan_y: " << cameraPanY << " ~ FOV: " << cameraFOV << endl;
+	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << endl;
+	cout << " + FOV: " << cameraFOV << endl;
+	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
+	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
+	cout << "[===================================================]" << endl;
 
 	glPushMatrix();
-	glDisable(GL_LIGHTING);
+	//###glDisable(GL_LIGHTING);
 
 	float depth = -1.0f; //###
 
@@ -125,8 +186,6 @@ void display() {
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 
 	//Draw Cave.
-	glColor3f(1.0f, 1.0f, 1.0f);
-
 	for (int i = 0; i < caveWidth; i++) { //For each cave column.
 		for (int j = 0; j < caveHeight; j++) { //For each cave row.
 			if (currentCave[j][i] == 0) { //If cell is free.
@@ -241,8 +300,9 @@ void display() {
 			}
 		}
 	}
-
 	glPopMatrix();
+
+	displayControls();
 	glutSwapBuffers();
 }
 
@@ -274,17 +334,32 @@ void keyboardInput(unsigned char key, int, int) {
 		//Exits the program.
 		case 'q': exit(1); break;
 		//Zoom Out.
-		case '[': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; cameraPanX *= cameraFOV; break; //###
+		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; cameraPanX *= cameraFOV; break; //###
 		//Zoom In.
-		case ']': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; cameraPanX *= cameraFOV; break; //###
+		case '[': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; cameraPanX *= cameraFOV; break; //###
 		//Randomise Cave. Also resets if already set.
 		case 'r':
 		case 'R': randomiseCave(); break;
+		//###Noise Scale Up.
+		case 'n': noiseScale += 1.0f; randomiseCave(); break;
+		//###Noise Scale Down.
+		case 'm': noiseScale -= 1.0f; randomiseCave(); break;
+		//###Fill Percentage Decrease.
+		case 'k': fillPercentage = (fillPercentage <= 0) ? 0 : fillPercentage - 1; randomiseCave(); break;
+		//###Fill Percentage Increase.
+		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
 		//Smooth 1 Iteration.
 		case ' ':
 			smoothCave();
 			memcpy(currentCave, nextCave, sizeof(currentCave));
 			break;
+		//Smooth 20 Iterations.
+		case 'c':
+		  for (int i = 0; i < 20; i++) {
+				smoothCave();
+				memcpy(currentCave, nextCave, sizeof(currentCave));
+			}
+		  break;
 	}
 	glutPostRedisplay();
 }
@@ -306,7 +381,9 @@ void specialKeyInput(int key, int x, int y) {
 
 void init() {
 	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
 }
 
@@ -332,13 +409,6 @@ int main(int argc, char* argv[]) {
 
 	//Cave Generation.
 	randomiseCave();
-	//init();
-	//glutMainLoop();
-	/*for (int i = 0; i < smoothIterations; i++) {
-		smoothCave();
-		memcpy(currentCave, nextCave, sizeof(currentCave));
-	}*/
-
 
 	init();
 	glutMainLoop();
