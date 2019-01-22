@@ -25,14 +25,54 @@ struct Light {
 	float position[4];
 };
 
+//Material Struct.
+struct Material {
+	float ambient[4];
+	float diffuse[4];
+	float specular[4];
+	float shininess;
+};
+
 //Global Light Source.
 const Light globalLight = {
 	GL_LIGHT0,
-	{0.08f, 0.08f, 0.08f, 1.0f},
-	{3.0f, 3.0f, 3.0f, 1.0f},
+	{0.2f, 0.2f, 0.2f, 1.0f},
+	{2.0f, 2.0f, 2.0f, 1.0f},
 	{0.5f, 0.5f, 0.5f, 1.0f},
-	{0.0f, 0.0f, 1.0f, 1.0f}
+	{120.0f, 90.0f, 50.0f, 1.0f}
 };
+
+//Global Material.
+const Material globalMaterial = {
+	{0.02f, 0.02f, 0.02f, 1.0f},
+  {0.01f, 0.01f, 0.01f, 1.0f},
+	{0.4f, 0.4f, 0.4f, 1.0f},
+	0.078125f
+
+	/*{0.15f, 0.15f, 0.15f, 1.0f},
+  {0.4f, 0.4f, 0.4f, 1.0f},
+	{0.7746f, 0.7746f, 0.7746f, 1.0f},
+	76.8f*/
+};
+
+//Sets the properties of a given material.
+void setMaterial(const Material& material) {
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ambient);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material.diffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material.specular);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, material.shininess);
+}
+
+//Sets the properties of a given light.
+void setLight(const Light& light) {
+	glLightfv(light.name, GL_AMBIENT, light.ambient);
+	glLightfv(light.name, GL_DIFFUSE, light.diffuse);
+	glLightfv(light.name, GL_SPECULAR, light.specular);
+	glLightfv(light.name, GL_POSITION, light.position);
+	//glLightf(light.name, GL_SPOT_CUTOFF, 60.0f);
+}
+
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Cave Properties.
 const int caveWidth = 250; //Number of cells making the width of the cave.
@@ -60,6 +100,7 @@ int nextCave[caveHeight][caveWidth];
 //Cave 2 (Simplex): FP: 45, Scale: 40.
 //Cave 3 (Simplex): FP: 45, Scale: 15.
 //Cave 4 (Simplex): FP: 55, Scale: 20.
+//Cave 5 (Simplex): FP: 50, Scale: 40. //Remove small occupied areas.
 
 //Camera.
 float cameraPanX = 120.0f; //Camera translation along the x-axis.
@@ -137,6 +178,16 @@ void smoothCave() {
 	}
 }
 
+//Removes occupied areas with an area smaller than the given size. //###
+void removeOccupiedAreas() {
+
+}
+
+//Adds a free area to the cave of given size and location. //###
+void addFreeArea() {
+
+}
+
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Displays the control text at the top-left of the window.
@@ -163,11 +214,18 @@ void idle() {
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//###
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(cameraFOV, (GLdouble)glutGet(GLUT_WINDOW_WIDTH) / (GLdouble)glutGet(GLUT_WINDOW_HEIGHT), 0.1f, 250.0f);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	//Eye Position, Reference Point, Up Vector.
 	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
+	setLight(globalLight);
 
 	//###DEBUG.
 	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << endl;
@@ -177,7 +235,7 @@ void display() {
 	cout << "[===================================================]" << endl;
 
 	glPushMatrix();
-	//###glDisable(GL_LIGHTING);
+	glEnable(GL_LIGHTING);
 
 	float depth = -1.0f; //###
 
@@ -202,27 +260,40 @@ void display() {
 				int occupiedNeighbourCount = currentCave[j+1][i] + currentCave[j][i-1] + currentCave[j-1][i] + currentCave[j][i+1];
 
 				//Vertices.
-				float tl[3] = {-0.5f, 0.5f, 0};
-				float tl_d[3] = {-0.5f, 0.5f, depth};
-				float tr[3] = {0.5f, 0.5f, 0};
-				float tr_d[3] = {0.5f, 0.5f, depth};
-				float bl[3] = {-0.5f, -0.5f, 0};
-				float bl_d[3] = {-0.5f, -0.5f, depth};
-				float br[3] = {0.5f, -0.5f, 0};
-				float br_d[3] = {0.5f, -0.5f, depth};
+				const float tl[3] = {-0.5f, 0.5f, 0};
+				const float tl_d[3] = {-0.5f, 0.5f, depth};
+				const float tr[3] = {0.5f, 0.5f, 0};
+				const float tr_d[3] = {0.5f, 0.5f, depth};
+				const float bl[3] = {-0.5f, -0.5f, 0};
+				const float bl_d[3] = {-0.5f, -0.5f, depth};
+				const float br[3] = {0.5f, -0.5f, 0};
+				const float br_d[3] = {0.5f, -0.5f, depth};
+
+				//Normals.
+				const float nl[3] = {-1.0f, 0.0f, 0.0f};
+				const float nr[3] = {1.0f, 0.0f, 0.0f};
+				const float nt[3] = {0.0f, 1.0f, 0.0f};
+				const float nb[3] = {0.0f, -1.0f, 0.0f};
+				const float nf[3] = {0.0f, 0.0f, 1.0f};
+				const float ntl[3] = {-1.0f, 1.0f, 0.0f};
+				const float ntr[3] = {1.0f, 1.0f, 0.0f};
+				const float nbl[3] = {-1.0f, -1.0f, 0.0f};
+				const float nbr[3] = {1.0f, -1.0f, 0.0f};
 
 				if (occupiedNeighbourCount == 2 && ((top && right) || (bottom && left))) {
 					//Camera-Viewing polygon face.
 					glColor3fv(caveFaceColour);
 					glBegin(GL_POLYGON);
-					glVertex3fv(tl);
-					glVertex3fv(br);
+					glNormal3fv(nf); glVertex3fv(tl);
+					glNormal3fv(nf); glVertex3fv(br);
+					glNormal3fv(nf);
 					top ? glVertex3fv(bl) : glVertex3fv(tr);
 					glEnd();
 
 					glColor3fv(caveDepthColour);
 					//Depth face.
 					glBegin(GL_QUAD_STRIP);
+					top ? glNormal3fv(ntr) : glNormal3fv(nbl);
 					glVertex3fv(tl);
 					glVertex3fv(tl_d);
 					glVertex3fv(br);
@@ -233,14 +304,16 @@ void display() {
 					//Camera-Viewing polygon face.
 					glColor3fv(caveFaceColour);
 					glBegin(GL_POLYGON);
-					glVertex3fv(tr);
-					glVertex3fv(bl);
+					glNormal3fv(nf); glVertex3fv(tr);
+					glNormal3fv(nf); glVertex3fv(bl);
+					glNormal3fv(nf);
 					bottom ? glVertex3fv(tl) : glVertex3fv(br);
 					glEnd();
 
 					glColor3fv(caveDepthColour);
 					//Depth face.
 					glBegin(GL_QUAD_STRIP);
+					bottom ? glNormal3fv(nbr) : glNormal3fv(ntl);
 					glVertex3fv(tr);
 					glVertex3fv(tr_d);
 					glVertex3fv(bl);
@@ -251,47 +324,47 @@ void display() {
 					//Camera-Viewing polygon face.
 					glColor3fv(caveFaceColour);
 					glBegin(GL_POLYGON);
-					glVertex3f(0.5f, 0.5f, 0);
-					glVertex3f(0.5f, -0.5f, 0);
-					glVertex3f(-0.5f, -0.5f, 0);
-					glVertex3f(-0.5f, 0.5f, 0);
+					glNormal3fv(nf); glVertex3f(0.5f, 0.5f, 0);
+					glNormal3fv(nf); glVertex3f(0.5f, -0.5f, 0);
+					glNormal3fv(nf); glVertex3f(-0.5f, -0.5f, 0);
+					glNormal3fv(nf); glVertex3f(-0.5f, 0.5f, 0);
 					glEnd();
 
 					glColor3fv(caveDepthColour);
 					//Depth Face: Top.
 					if (currentCave[j+1][i] == 1) {
 						glBegin(GL_POLYGON);
-						glVertex3fv(tr);
-						glVertex3fv(tl);
-						glVertex3fv(tl_d);
-						glVertex3fv(tr_d);
+						glNormal3fv(nt); glVertex3fv(tr);
+						glNormal3fv(nt); glVertex3fv(tl);
+						glNormal3fv(nt); glVertex3fv(tl_d);
+						glNormal3fv(nt); glVertex3fv(tr_d);
 						glEnd();
 					}
 					//Depth Face: Left.
 					if (currentCave[j][i-1] == 1) {
 						glBegin(GL_POLYGON);
-						glVertex3fv(bl);
-						glVertex3fv(tl);
-						glVertex3fv(tl_d);
-						glVertex3fv(bl_d);
+						glNormal3fv(nl); glVertex3fv(bl);
+						glNormal3fv(nl); glVertex3fv(tl);
+						glNormal3fv(nl); glVertex3fv(tl_d);
+						glNormal3fv(nl); glVertex3fv(bl_d);
 						glEnd();
 					}
 					//Depth Face: Bottom.
 					if (currentCave[j-1][i] == 1) {
 						glBegin(GL_POLYGON);
-						glVertex3fv(br);
-						glVertex3fv(bl);
-						glVertex3fv(bl_d);
-						glVertex3fv(br_d);
+						glNormal3fv(nb); glVertex3fv(br);
+						glNormal3fv(nb);glVertex3fv(bl);
+						glNormal3fv(nb);glVertex3fv(bl_d);
+						glNormal3fv(nb);glVertex3fv(br_d);
 						glEnd();
 					}
 					//Depth Face: Right.
 					if (currentCave[j][i+1] == 1) {
 						glBegin(GL_POLYGON);
-						glVertex3fv(br);
-						glVertex3fv(tr);
-						glVertex3fv(tr_d);
-						glVertex3fv(br_d);
+						glNormal3fv(nr); glVertex3fv(br);
+						glNormal3fv(nr); glVertex3fv(tr);
+						glNormal3fv(nr); glVertex3fv(tr_d);
+						glNormal3fv(nr); glVertex3fv(br_d);
 						glEnd();
 					}
 				}
@@ -380,8 +453,15 @@ void specialKeyInput(int key, int x, int y) {
 }
 
 void init() {
+	//Material.
+	setMaterial(globalMaterial);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+	//Light.
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
+
+	//Misc.
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
