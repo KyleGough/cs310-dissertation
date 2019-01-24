@@ -21,10 +21,15 @@ using namespace std;
 //1)
 //Flood fill on free area, all areas not covered in the flood fill then fill.
 //This hides redundant free areas that cannot be accessed.
+//2)
+//REPLACE NEXT CAVE WITH TEMP CAVE. so can be used for flood fill without conflicting variable names.
+
 
 //NOTES
 //0 --> Occupied.
 //1 --> Free.
+
+
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -112,8 +117,8 @@ float noiseOffsetX = 100.0f;
 float noiseOffsetY = 100.0f;
 
 //Cave.
-int currentCave[caveHeight][caveWidth];
-int nextCave[caveHeight][caveWidth];
+int currentCave[caveWidth][caveHeight];
+int tempCave[caveWidth][caveHeight];
 
 //###Presets.
 //Cave 1 (Random): FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
@@ -143,7 +148,7 @@ int getNeighbourCount(int x, int y) {
 	int count = 0;
 	for (int i = x - 1; i <= x + 1; i++) {
 		for (int j = y - 1; j <= y + 1; j++) {
-			if (!(i == x && j == y) && currentCave[j][i] == 1) {
+			if (!(i == x && j == y) && currentCave[i][j] == 1) {
 				count++;
 			}
 		}
@@ -158,18 +163,18 @@ void smoothCave(int iterations) {
 			for (int x = border; x < caveWidth - border; x++) { //For each column.
 				int neighbours = getNeighbourCount(x, y);
 				if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
-					nextCave[y][x] = 1; //Cell is born.
+					tempCave[x][y] = 1; //Cell is born.
 				}
 				else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
-					nextCave[y][x] = 0; //Cell dies.
+					tempCave[x][y] = 0; //Cell dies.
 				}
 				else {
-					nextCave[y][x] = currentCave[y][x]; //Maintains the cell state.
+					tempCave[x][y] = currentCave[x][y]; //Maintains the cell state.
 				}
 			}
 		}
 		//Copies the contents of next cave into current cave.
-		memcpy(currentCave, nextCave, sizeof(currentCave));
+		memcpy(currentCave, tempCave, sizeof(currentCave));
 	}
 }
 
@@ -185,8 +190,8 @@ void randomiseCave() {
 		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
 			if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
 				//Cave border.
-				currentCave[y][x] = 0;
-				nextCave[y][x] = 0;
+				currentCave[x][y] = 0;
+				tempCave[x][y] = 0;
 			}
 			else {
 				//Maps each x,y coordinate to a scaled and offset coordinate.
@@ -196,7 +201,7 @@ void randomiseCave() {
 				float noise = SimplexNoise::noise(mappedX, mappedY);
 				//Thresholds the noise value into either a free or occupied cell.
 				float noiseThreshold = (fillPercentage / 50.0f) - 1.0f;
-				currentCave[y][x] = (noise <= noiseThreshold) ? 0 : 1;
+				currentCave[x][y] = (noise <= noiseThreshold) ? 0 : 1;
 			}
 		}
 	}
@@ -222,21 +227,15 @@ void addFreeArea() {
 }
 
 
-void floodFillMain() {
-
-}
-
 int floodFill(int x, int y) {
 
 	int count = 0;
-	int floodCave[caveWidth][caveHeight];
-	memcpy(currentCave, floodCave, sizeof(currentCave));
 
-	if (floodCave[x][y] == 0) { //Current cell is occupied.
+	if (tempCave[x][y] == 0) { //Current cell is occupied.
 	  return 0;
 	}
 
-	floodCave[x][y] = 0; //Sets current cell as occupied.
+	tempCave[x][y] = 0; //Sets current cell as occupied.
 
 	queue<Cell> cellQueue;
 	Cell n = Cell(x,y);
@@ -247,17 +246,47 @@ int floodFill(int x, int y) {
 		cellQueue.pop();
 
 		//If the West cell is not part of the border and is free.
-		if (n.x-1 >= border && floodCave[n.x-1][n.y] == 1) {
-			floodCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
+		if (n.x-1 >= border && tempCave[n.x-1][n.y] == 1) {
+			tempCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
 			Cell west = Cell(n.x-1, n.y);
 			cellQueue.push(west);
+			count++;
 		}
-
-
+		//If the East cell is not part of the border and is free.
+		if (n.x+1 <= caveWidth - border - 1 && tempCave[n.x+1][n.y] == 1) {
+			tempCave[n.x+1][n.y] = 0; //Sets the east cell to occupied.
+			Cell east = Cell(n.x+1, n.y);
+			cellQueue.push(east);
+			count++;
+		}
+		//If the South cell is not part of the border and is free.
+		if (n.y-1 >= border && tempCave[n.x][n.y-1] == 1) {
+			tempCave[n.x][n.y-1] = 0; //Sets the south cell to occupied.
+			Cell south = Cell(n.x, n.y-1);
+			cellQueue.push(south);
+			count++;
+		}
+		//If the North cell is not part of the border and is free.
+		if (n.y+1 <= caveHeight - border - 1 && tempCave[n.x][n.y+1] == 1) {
+			tempCave[n.x][n.y+1] = 0; //Sets the north cell to occupied.
+			Cell north = Cell(n.x, n.y+1);
+			cellQueue.push(north);
+			count++;
+		}
 
 	}
 
+	return count;
+}
 
+
+void floodFillMain() {
+	memcpy(tempCave, currentCave, sizeof(currentCave));
+	for (int x = border; x < caveWidth - border; x++) {
+		for (int y = border; y < caveHeight - border; y++) {
+			cout << x << ":" << y << " - " << floodFill(x,y) << endl;
+		}
+	}
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -318,18 +347,18 @@ void display() {
 	//Draw Cave.
 	for (int i = 0; i < caveWidth; i++) { //For each cave column.
 		for (int j = 0; j < caveHeight; j++) { //For each cave row.
-			if (currentCave[j][i] == 0) { //If cell is free.
+			if (currentCave[i][j] == 0) { //If cell is free.
 				glPushMatrix();
 
 				//Translate to cell position.
 				glTranslatef((float)i, (float)j, 0);
 				glColor3fv(caveFaceColour);
 
-				bool top = currentCave[j+1][i] == 1;
-				bool left = currentCave[j][i-1] == 1;
-				bool bottom = currentCave[j-1][i] == 1;
-				bool right = currentCave[j][i+1] == 1;
-				int occupiedNeighbourCount = currentCave[j+1][i] + currentCave[j][i-1] + currentCave[j-1][i] + currentCave[j][i+1];
+				bool top = currentCave[i][j+1] == 1;
+				bool left = currentCave[i-1][j] == 1;
+				bool bottom = currentCave[i][j-1] == 1;
+				bool right = currentCave[i+1][j] == 1;
+				int occupiedNeighbourCount = currentCave[i][j+1] + currentCave[i-1][j] + currentCave[i][j-1] + currentCave[i+1][j];
 
 				//Vertices.
 				const float tl[3] = {-0.5f, 0.5f, 0};
@@ -404,7 +433,7 @@ void display() {
 
 					glColor3fv(caveDepthColour);
 					//Depth Face: Top.
-					if (currentCave[j+1][i] == 1) {
+					if (currentCave[i][j+1] == 1) {
 						glBegin(GL_POLYGON);
 						glNormal3fv(nt); glVertex3fv(tr);
 						glNormal3fv(nt); glVertex3fv(tl);
@@ -413,7 +442,7 @@ void display() {
 						glEnd();
 					}
 					//Depth Face: Left.
-					if (currentCave[j][i-1] == 1) {
+					if (currentCave[i-1][j] == 1) {
 						glBegin(GL_POLYGON);
 						glNormal3fv(nl); glVertex3fv(bl);
 						glNormal3fv(nl); glVertex3fv(tl);
@@ -422,7 +451,7 @@ void display() {
 						glEnd();
 					}
 					//Depth Face: Bottom.
-					if (currentCave[j-1][i] == 1) {
+					if (currentCave[i][j-1] == 1) {
 						glBegin(GL_POLYGON);
 						glNormal3fv(nb); glVertex3fv(br);
 						glNormal3fv(nb);glVertex3fv(bl);
@@ -431,7 +460,7 @@ void display() {
 						glEnd();
 					}
 					//Depth Face: Right.
-					if (currentCave[j][i+1] == 1) {
+					if (currentCave[i+1][j] == 1) {
 						glBegin(GL_POLYGON);
 						glNormal3fv(nr); glVertex3fv(br);
 						glNormal3fv(nr); glVertex3fv(tr);
@@ -496,12 +525,16 @@ void keyboardInput(unsigned char key, int, int) {
 		//Smooth 1 Iteration.
 		case ' ':
 			smoothCave(1);
-			memcpy(currentCave, nextCave, sizeof(currentCave));
+			memcpy(currentCave, tempCave, sizeof(currentCave));
 			break;
 		//Smooth 25 Iterations.
 		case 'c':
 		  smoothCave(25);
 		  break;
+		//###Test flood fill.
+		case 'y':
+		  floodFillMain();
+			break;
 	}
 	glutPostRedisplay();
 }
