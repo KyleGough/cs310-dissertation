@@ -9,10 +9,22 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <queue>
 
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
 using namespace std;
+
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+
+//TODO
+//1)
+//Flood fill on free area, all areas not covered in the flood fill then fill.
+//This hides redundant free areas that cannot be accessed.
+
+//NOTES
+//0 --> Occupied.
+//1 --> Free.
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -74,6 +86,14 @@ void setLight(const Light& light) {
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
+struct Cell {
+	int x;
+	int y;
+	Cell(int setX, int setY) : x(setX), y(setY) {}
+};
+
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+
 //Cave Properties.
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
@@ -119,6 +139,40 @@ bool thresholdRandom(int chance) {
 	return rand() % 100 < chance;
 }
 
+int getNeighbourCount(int x, int y) {
+	int count = 0;
+	for (int i = x - 1; i <= x + 1; i++) {
+		for (int j = y - 1; j <= y + 1; j++) {
+			if (!(i == x && j == y) && currentCave[j][i] == 1) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
+//Performs one pass of a given ruleset of cellular automata to smooth the cave.
+void smoothCave(int iterations) {
+	for (int i = 0; i < iterations; i++) { //Smooth iterations.
+		for (int y = border; y < caveHeight - border; y++) { //For each row.
+			for (int x = border; x < caveWidth - border; x++) { //For each column.
+				int neighbours = getNeighbourCount(x, y);
+				if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
+					nextCave[y][x] = 1; //Cell is born.
+				}
+				else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
+					nextCave[y][x] = 0; //Cell dies.
+				}
+				else {
+					nextCave[y][x] = currentCave[y][x]; //Maintains the cell state.
+				}
+			}
+		}
+		//Copies the contents of next cave into current cave.
+		memcpy(currentCave, nextCave, sizeof(currentCave));
+	}
+}
+
 //Generates the initial cave using Simplex noise.
 void randomiseCave() {
 
@@ -146,36 +200,15 @@ void randomiseCave() {
 			}
 		}
 	}
+	//Smooths the generated noise over 20 iterations.
+	smoothCave(20);
 }
 
-int getNeighbourCount(int x, int y) {
-	int count = 0;
-	for (int i = x - 1; i <= x + 1; i++) {
-		for (int j = y - 1; j <= y + 1; j++) {
-			if (!(i == x && j == y) && currentCave[j][i] == 1) {
-				count++;
-			}
-		}
-	}
-	return count;
-}
 
-//Performs one pass of a given ruleset of cellular automata to smooth the cave.
-void smoothCave() {
-	for (int y = border; y < caveHeight - border; y++) {
-		for (int x = border; x < caveWidth - border; x++) {
-			int neighbours = getNeighbourCount(x, y);
-			if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
-				nextCave[y][x] = 1; //Cell is born.
-			}
-			else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
-				nextCave[y][x] = 0; //Cell dies.
-			}
-			else {
-				nextCave[y][x] = currentCave[y][x]; //Maintains the cell state.
-			}
-		}
-	}
+
+//Uses flood fill to determine inaccesible free areas to remove.
+void removeInaccessibleAreas() {
+
 }
 
 //Removes occupied areas with an area smaller than the given size. //###
@@ -185,6 +218,45 @@ void removeOccupiedAreas() {
 
 //Adds a free area to the cave of given size and location. //###
 void addFreeArea() {
+
+}
+
+
+void floodFillMain() {
+
+}
+
+int floodFill(int x, int y) {
+
+	int count = 0;
+	int floodCave[caveWidth][caveHeight];
+	memcpy(currentCave, floodCave, sizeof(currentCave));
+
+	if (floodCave[x][y] == 0) { //Current cell is occupied.
+	  return 0;
+	}
+
+	floodCave[x][y] = 0; //Sets current cell as occupied.
+
+	queue<Cell> cellQueue;
+	Cell n = Cell(x,y);
+	cellQueue.push(n);
+
+	while (!cellQueue.empty()) {
+		n = cellQueue.front();
+		cellQueue.pop();
+
+		//If the West cell is not part of the border and is free.
+		if (n.x-1 >= border && floodCave[n.x-1][n.y] == 1) {
+			floodCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
+			Cell west = Cell(n.x-1, n.y);
+			cellQueue.push(west);
+		}
+
+
+
+	}
+
 
 }
 
@@ -228,7 +300,7 @@ void display() {
 	setLight(globalLight);
 
 	//###DEBUG.
-	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << endl;
+	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
 	cout << " + FOV: " << cameraFOV << endl;
 	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
 	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
@@ -423,15 +495,12 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
 		//Smooth 1 Iteration.
 		case ' ':
-			smoothCave();
+			smoothCave(1);
 			memcpy(currentCave, nextCave, sizeof(currentCave));
 			break;
-		//Smooth 20 Iterations.
+		//Smooth 25 Iterations.
 		case 'c':
-		  for (int i = 0; i < 20; i++) {
-				smoothCave();
-				memcpy(currentCave, nextCave, sizeof(currentCave));
-			}
+		  smoothCave(25);
 		  break;
 	}
 	glutPostRedisplay();
