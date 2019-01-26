@@ -10,27 +10,16 @@
 #include <cstring>
 #include <cstdint>
 #include <queue>
-
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
 using namespace std;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
-
 //TODO
-//1)
-//Flood fill on free area, all areas not covered in the flood fill then fill.
-//This hides redundant free areas that cannot be accessed.
-//2)
-//REPLACE NEXT CAVE WITH TEMP CAVE. so can be used for flood fill without conflicting variable names.
-
 
 //NOTES
 //0 --> Occupied.
 //1 --> Free.
-
-
-
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Light Struct.
@@ -53,7 +42,7 @@ struct Material {
 //Global Light Source.
 const Light globalLight = {
 	GL_LIGHT0,
-	{0.2f, 0.2f, 0.2f, 1.0f},
+	{0.3f, 0.3f, 0.3f, 1.0f},
 	{2.0f, 2.0f, 2.0f, 1.0f},
 	{0.5f, 0.5f, 0.5f, 1.0f},
 	{120.0f, 90.0f, 50.0f, 1.0f}
@@ -110,6 +99,7 @@ const int birthThreshold = 4;
 const int deathThreshold = 4;
 const int deathChance = 75;
 const int birthChance = 100;
+const float depth = -1.0f; //###
 
 //Simplex Noise.
 float noiseScale = 40.0f;
@@ -119,6 +109,7 @@ float noiseOffsetY = 100.0f;
 //Cave.
 int currentCave[caveWidth][caveHeight];
 int tempCave[caveWidth][caveHeight];
+Cell startCell = Cell(0,0);
 
 //###Presets.
 //Cave 1 (Random): FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
@@ -133,9 +124,8 @@ float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
 
 //Colours.
-float caveFaceColour[3] = {0.3f, 0.2f, 0.4f};
-float caveDepthColour[3] = {0.35f, 0.25f, 0.45f};
-
+float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
+float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -209,12 +199,6 @@ void randomiseCave() {
 	smoothCave(20);
 }
 
-
-
-//Uses flood fill to determine inaccesible free areas to remove.
-void removeInaccessibleAreas() {
-
-}
 
 //Removes occupied areas with an area smaller than the given size. //###
 void removeOccupiedAreas() {
@@ -411,8 +395,6 @@ void display() {
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
 
-	float depth = -1.0f; //###
-
 	//Draws Cave Background and Border.
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
@@ -549,6 +531,9 @@ void display() {
 	}
 	glPopMatrix();
 
+	//Draws a drone at the starting location. //###
+	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth);
+
 	displayControls();
 	glutSwapBuffers();
 }
@@ -598,7 +583,7 @@ void keyboardInput(unsigned char key, int, int) {
 		//###Improve Cave Features.
 		case ' ':
 			smoothCave(25);
-		  Cell startCell = findStartCell();
+		  startCell = findStartCell();
 			fillInaccessibleAreas(startCell);
 			break;
 	}
