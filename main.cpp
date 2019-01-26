@@ -66,7 +66,7 @@ const Material globalMaterial = {
 	{0.4f, 0.4f, 0.4f, 1.0f},
 	0.078125f
 
-	/*{0.15f, 0.15f, 0.15f, 1.0f},
+	/*###{0.15f, 0.15f, 0.15f, 1.0f},
   {0.4f, 0.4f, 0.4f, 1.0f},
 	{0.7746f, 0.7746f, 0.7746f, 1.0f},
 	76.8f*/
@@ -226,19 +226,20 @@ void addFreeArea() {
 
 }
 
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
-int floodFill(int x, int y) {
+//Performs a flood fill at a given position and counts how many cells are captured in the fill.
+int floodFill(int x, int y, int target) {
 
-	int count = 0;
+	//Current cell is occupied.
+	if (tempCave[x][y] == 0) { return 0; }
 
-	if (tempCave[x][y] == 0) { //Current cell is occupied.
-	  return 0;
-	}
+	//Sets current cell to the target state.
+	tempCave[x][y] = target;
 
-	tempCave[x][y] = 0; //Sets current cell as occupied.
-
-	queue<Cell> cellQueue;
-	Cell n = Cell(x,y);
+	int count = 0; //Number of cells in the same region.
+	queue<Cell> cellQueue; //Queue of cells to be checked.
+	Cell n = Cell(x,y); //Current cell.
 	cellQueue.push(n);
 
 	while (!cellQueue.empty()) {
@@ -247,46 +248,118 @@ int floodFill(int x, int y) {
 
 		//If the West cell is not part of the border and is free.
 		if (n.x-1 >= border && tempCave[n.x-1][n.y] == 1) {
-			tempCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
+			tempCave[n.x-1][n.y] = target; //Sets the west cell to target state.
 			Cell west = Cell(n.x-1, n.y);
 			cellQueue.push(west);
 			count++;
 		}
 		//If the East cell is not part of the border and is free.
 		if (n.x+1 <= caveWidth - border - 1 && tempCave[n.x+1][n.y] == 1) {
-			tempCave[n.x+1][n.y] = 0; //Sets the east cell to occupied.
+			tempCave[n.x+1][n.y] = target; //Sets the east cell to target state.
 			Cell east = Cell(n.x+1, n.y);
 			cellQueue.push(east);
 			count++;
 		}
 		//If the South cell is not part of the border and is free.
 		if (n.y-1 >= border && tempCave[n.x][n.y-1] == 1) {
-			tempCave[n.x][n.y-1] = 0; //Sets the south cell to occupied.
+			tempCave[n.x][n.y-1] = target; //Sets the south cell to target state.
 			Cell south = Cell(n.x, n.y-1);
 			cellQueue.push(south);
 			count++;
 		}
 		//If the North cell is not part of the border and is free.
 		if (n.y+1 <= caveHeight - border - 1 && tempCave[n.x][n.y+1] == 1) {
-			tempCave[n.x][n.y+1] = 0; //Sets the north cell to occupied.
+			tempCave[n.x][n.y+1] = target; //Sets the north cell to target state.
 			Cell north = Cell(n.x, n.y+1);
 			cellQueue.push(north);
 			count++;
 		}
-
 	}
 
 	return count;
 }
 
-
-void floodFillMain() {
+//Uses a series of flood fills to find an appropriate starting cell.
+Cell findStartCell() {
 	memcpy(tempCave, currentCave, sizeof(currentCave));
+	Cell startCell = Cell(0,0);
+	int max = 0;
+
+	//Iterates over all cells in the cave.
 	for (int x = border; x < caveWidth - border; x++) {
 		for (int y = border; y < caveHeight - border; y++) {
-			cout << x << ":" << y << " - " << floodFill(x,y) << endl;
+			//Uses flood fill to see how many cells occupy the same free space.
+			int count = floodFill(x,y,0);
+			if (count > max) {
+				max = count;
+				startCell.x = x;
+				startCell.y = y;
+			}
 		}
 	}
+	cout << "+ Start: (" << startCell.x << "," << startCell.y << ") with count: " << max << "." << endl; //###
+	return startCell;
+}
+
+//Changes all inaccessible free cells to occupied cells.
+void fillInaccessibleAreas(Cell startCell) {
+
+	//Sets the temporary cave to be fully occupied.
+  for (int i = 0; i < caveWidth; i++) {
+		for (int j = 0; j < caveHeight; j++) {
+			tempCave[i][j] = 0;
+		}
+	}
+
+	int x = startCell.x;
+	int y = startCell.y;
+
+	//Current cell is occupied.
+	if (currentCave[x][y] == 0) { return; }
+
+	//Sets current cell to free.
+	tempCave[x][y] = 1;
+
+	queue<Cell> cellQueue; //Queue of cells to be checked.
+	Cell n = Cell(x,y); //Current cell.
+	cellQueue.push(n);
+
+	while (!cellQueue.empty()) {
+		n = cellQueue.front();
+		cellQueue.pop();
+
+		//If the West cell is not part of the border and is free.
+		if (n.x-1 >= border && currentCave[n.x-1][n.y] == 1) {
+			currentCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
+			tempCave[n.x-1][n.y] = 1; //Sets the west cell to free.
+			Cell west = Cell(n.x-1, n.y);
+			cellQueue.push(west);
+		}
+		//If the East cell is not part of the border and is free.
+		if (n.x+1 <= caveWidth - border - 1 && currentCave[n.x+1][n.y] == 1) {
+			currentCave[n.x+1][n.y] = 0; //Sets the east cell to occupied.
+			tempCave[n.x+1][n.y] = 1; //Sets the east cell to free.
+			Cell east = Cell(n.x+1, n.y);
+			cellQueue.push(east);
+		}
+		//If the South cell is not part of the border and is free.
+		if (n.y-1 >= border && currentCave[n.x][n.y-1] == 1) {
+			currentCave[n.x][n.y-1] = 0; //Sets the south cell to occupied.
+			tempCave[n.x][n.y-1] = 1; //Sets the south cell to free.
+			Cell south = Cell(n.x, n.y-1);
+			cellQueue.push(south);
+		}
+		//If the North cell is not part of the border and is free.
+		if (n.y+1 <= caveHeight - border - 1 && currentCave[n.x][n.y+1] == 1) {
+			currentCave[n.x][n.y+1] = 0; //Sets the north cell to target state.
+			tempCave[n.x][n.y+1] = 1; //Sets the north cell to target state.
+			Cell north = Cell(n.x, n.y+1);
+			cellQueue.push(north);
+		}
+	}
+
+	//Copies the improved cave to the current cave structure.
+	memcpy(currentCave, tempCave, sizeof(currentCave));
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -329,11 +402,11 @@ void display() {
 	setLight(globalLight);
 
 	//###DEBUG.
-	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
+	/*cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
 	cout << " + FOV: " << cameraFOV << endl;
 	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
 	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
-	cout << "[===================================================]" << endl;
+	cout << "[===================================================]" << endl;*/
 
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
@@ -508,9 +581,9 @@ void keyboardInput(unsigned char key, int, int) {
 		//Exits the program.
 		case 'q': exit(1); break;
 		//Zoom Out.
-		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 1.0f; cameraPanX *= cameraFOV; break; //###
+		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 5.0f; break;
 		//Zoom In.
-		case '[': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 1.0f; cameraPanX *= cameraFOV; break; //###
+		case '[': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 5.0f; break;
 		//Randomise Cave. Also resets if already set.
 		case 'r':
 		case 'R': randomiseCave(); break;
@@ -522,18 +595,11 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'k': fillPercentage = (fillPercentage <= 0) ? 0 : fillPercentage - 1; randomiseCave(); break;
 		//###Fill Percentage Increase.
 		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
-		//Smooth 1 Iteration.
+		//###Improve Cave Features.
 		case ' ':
-			smoothCave(1);
-			memcpy(currentCave, tempCave, sizeof(currentCave));
-			break;
-		//Smooth 25 Iterations.
-		case 'c':
-		  smoothCave(25);
-		  break;
-		//###Test flood fill.
-		case 'y':
-		  floodFillMain();
+			smoothCave(25);
+		  Cell startCell = findStartCell();
+			fillInaccessibleAreas(startCell);
 			break;
 	}
 	glutPostRedisplay();
