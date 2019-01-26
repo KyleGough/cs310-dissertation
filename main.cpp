@@ -83,7 +83,7 @@ void setLight(const Light& light) {
 struct Cell {
 	int x;
 	int y;
-	Cell(int setX, int setY) : x(setX), y(setY) {}
+	Cell(int _x, int _y) : x(_x), y(_y) {}
 };
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -399,8 +399,178 @@ void display() {
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 
-	//Draw Cave.
-	for (int i = 0; i < caveWidth; i++) { //For each cave column.
+	//Vertices.
+	const float tl[3] = {-0.5f, 0.5f, 0};
+	const float tl_d[3] = {-0.5f, 0.5f, depth};
+	const float tr[3] = {0.5f, 0.5f, 0};
+	const float tr_d[3] = {0.5f, 0.5f, depth};
+	const float bl[3] = {-0.5f, -0.5f, 0};
+	const float bl_d[3] = {-0.5f, -0.5f, depth};
+	const float br[3] = {0.5f, -0.5f, 0};
+	const float br_d[3] = {0.5f, -0.5f, depth};
+
+	//Normals.
+	const float nl[3] = {-1.0f, 0.0f, 0.0f};
+	const float nr[3] = {1.0f, 0.0f, 0.0f};
+	const float nt[3] = {0.0f, 1.0f, 0.0f};
+	const float nb[3] = {0.0f, -1.0f, 0.0f};
+	const float nf[3] = {0.0f, 0.0f, 1.0f};
+	const float ntl[3] = {-1.0f, 1.0f, 0.0f};
+	const float ntr[3] = {1.0f, 1.0f, 0.0f};
+	const float nbl[3] = {-1.0f, -1.0f, 0.0f};
+	const float nbr[3] = {1.0f, -1.0f, 0.0f};
+
+
+
+	//###
+	//New vertices.
+	const float near[8][3] = {
+		{-0.5f, 0.5f, 0}, //0-Top-Left.
+		{0, 0.5f, 0}, //1-Top-Middle.
+		{0.5f, 0.5f, 0}, //2-Top-Right.
+		{0.5f, 0, 0}, //3-Middle-Right.
+		{0.5f, -0.5f, 0}, //4-Bottom-Right.
+		{0, -0.5f, 0}, //5-Bottom-Middle.
+		{-0.5f, -0.5f, 0}, //6-Bottom-Left.
+		{-0.5f, 0, 0} //7-Middle-Left.
+	};
+
+	for (int i = 0; i < caveWidth - 1; i++) {
+		for (int j = 0; j < caveHeight - 1; j++) {
+			glPushMatrix();
+			//Translate to cell position.
+			glTranslatef((float)i, (float)j, 0);
+			glColor3fv(caveFaceColour);
+
+			//###remove this.
+			int tr = currentCave[i+1][j+1] == 0;
+			int tl = currentCave[i][j+1] == 0;
+			int bl = currentCave[i][j] == 0;
+			int br = currentCave[i+1][j] == 0;
+
+			int vertexInd = (tl << 3) + (tr << 2) + (br << 1) + bl;		
+			glBegin(GL_TRIANGLE_STRIP);
+			switch (vertexInd) {
+				case 0:
+				  break;
+				case 1:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[7]);
+					break;
+				case 2:
+					glNormal3fv(nf);
+				  glVertex3fv(near[5]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[3]);
+					break;
+				case 3:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[3]);
+					break;
+				case 4:
+					glNormal3fv(nf);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[2]);
+					glVertex3fv(near[1]);
+					break;
+				case 5:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[1]);
+					glVertex3fv(near[2]);
+					break;
+				case 6:
+					glNormal3fv(nf);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[1]);
+					glVertex3fv(near[2]);
+					break;
+				case 7:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[2]);
+					glVertex3fv(near[1]);
+					break;
+				case 8:
+					glNormal3fv(nf);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[1]);
+					glVertex3fv(near[0]);
+					break;
+				case 9:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[1]);
+					break;
+				case 10:
+					glNormal3fv(nf);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[1]);
+					break;
+				case 11:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[1]);
+					break;
+				case 12:
+					glNormal3fv(nf);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[2]);
+					break;
+				case 13:
+					glNormal3fv(nf);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[3]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[2]);
+					break;
+				case 14:
+					glNormal3fv(nf);
+					glVertex3fv(near[5]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[7]);
+					glVertex3fv(near[2]);
+					glVertex3fv(near[0]);
+					break;
+				case 15:
+					glNormal3fv(nf);
+					glVertex3fv(near[6]);
+					glVertex3fv(near[4]);
+					glVertex3fv(near[0]);
+					glVertex3fv(near[2]);
+					break;
+			}
+
+			glEnd();
+			glPopMatrix();
+		}
+	}
+
+	//###Original Draw Cave.
+	/*for (int i = 0; i < caveWidth; i++) { //For each cave column.
 		for (int j = 0; j < caveHeight; j++) { //For each cave row.
 			if (currentCave[i][j] == 0) { //If cell is free.
 				glPushMatrix();
@@ -415,26 +585,75 @@ void display() {
 				bool right = currentCave[i+1][j] == 1;
 				int occupiedNeighbourCount = currentCave[i][j+1] + currentCave[i-1][j] + currentCave[i][j-1] + currentCave[i+1][j];
 
-				//Vertices.
-				const float tl[3] = {-0.5f, 0.5f, 0};
-				const float tl_d[3] = {-0.5f, 0.5f, depth};
-				const float tr[3] = {0.5f, 0.5f, 0};
-				const float tr_d[3] = {0.5f, 0.5f, depth};
-				const float bl[3] = {-0.5f, -0.5f, 0};
-				const float bl_d[3] = {-0.5f, -0.5f, depth};
-				const float br[3] = {0.5f, -0.5f, 0};
-				const float br_d[3] = {0.5f, -0.5f, depth};
+				//Camera-Viewing polygon face.
+				glColor3fv(caveFaceColour);
+				glBegin(GL_POLYGON);
+				glNormal3fv(nf); glVertex3f(0.5f, 0.5f, 0);
+				glNormal3fv(nf); glVertex3f(0.5f, -0.5f, 0);
+				glNormal3fv(nf); glVertex3f(-0.5f, -0.5f, 0);
+				glNormal3fv(nf); glVertex3f(-0.5f, 0.5f, 0);
+				glEnd();
 
-				//Normals.
-				const float nl[3] = {-1.0f, 0.0f, 0.0f};
-				const float nr[3] = {1.0f, 0.0f, 0.0f};
-				const float nt[3] = {0.0f, 1.0f, 0.0f};
-				const float nb[3] = {0.0f, -1.0f, 0.0f};
-				const float nf[3] = {0.0f, 0.0f, 1.0f};
-				const float ntl[3] = {-1.0f, 1.0f, 0.0f};
-				const float ntr[3] = {1.0f, 1.0f, 0.0f};
-				const float nbl[3] = {-1.0f, -1.0f, 0.0f};
-				const float nbr[3] = {1.0f, -1.0f, 0.0f};
+				glColor3fv(caveDepthColour);
+				//Depth Face: Top.
+				if (currentCave[i][j+1] == 1) {
+					glBegin(GL_POLYGON);
+					glNormal3fv(nt); glVertex3fv(tr);
+					glNormal3fv(nt); glVertex3fv(tl);
+					glNormal3fv(nt); glVertex3fv(tl_d);
+					glNormal3fv(nt); glVertex3fv(tr_d);
+					glEnd();
+				}
+				//Depth Face: Left.
+				if (currentCave[i-1][j] == 1) {
+					glBegin(GL_POLYGON);
+					glNormal3fv(nl); glVertex3fv(bl);
+					glNormal3fv(nl); glVertex3fv(tl);
+					glNormal3fv(nl); glVertex3fv(tl_d);
+					glNormal3fv(nl); glVertex3fv(bl_d);
+					glEnd();
+				}
+				//Depth Face: Bottom.
+				if (currentCave[i][j-1] == 1) {
+					glBegin(GL_POLYGON);
+					glNormal3fv(nb); glVertex3fv(br);
+					glNormal3fv(nb);glVertex3fv(bl);
+					glNormal3fv(nb);glVertex3fv(bl_d);
+					glNormal3fv(nb);glVertex3fv(br_d);
+					glEnd();
+				}
+				//Depth Face: Right.
+				if (currentCave[i+1][j] == 1) {
+					glBegin(GL_POLYGON);
+					glNormal3fv(nr); glVertex3fv(br);
+					glNormal3fv(nr); glVertex3fv(tr);
+					glNormal3fv(nr); glVertex3fv(tr_d);
+					glNormal3fv(nr); glVertex3fv(br_d);
+					glEnd();
+				}
+
+				glPopMatrix();
+			}
+		}
+	}*/
+
+
+
+	//###Original Draw Cave.
+	/*for (int i = 0; i < caveWidth; i++) { //For each cave column.
+		for (int j = 0; j < caveHeight; j++) { //For each cave row.
+			if (currentCave[i][j] == 0) { //If cell is free.
+				glPushMatrix();
+
+				//Translate to cell position.
+				glTranslatef((float)i, (float)j, 0);
+				glColor3fv(caveFaceColour);
+
+				bool top = currentCave[i][j+1] == 1;
+				bool left = currentCave[i-1][j] == 1;
+				bool bottom = currentCave[i][j-1] == 1;
+				bool right = currentCave[i+1][j] == 1;
+				int occupiedNeighbourCount = currentCave[i][j+1] + currentCave[i-1][j] + currentCave[i][j-1] + currentCave[i+1][j];
 
 				if (occupiedNeighbourCount == 2 && ((top && right) || (bottom && left))) {
 					//Camera-Viewing polygon face.
@@ -528,7 +747,7 @@ void display() {
 				glPopMatrix();
 			}
 		}
-	}
+	}*/
 	glPopMatrix();
 
 	//Draws a drone at the starting location. //###
