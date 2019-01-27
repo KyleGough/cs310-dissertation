@@ -97,9 +97,9 @@ const int border = 3; //Padding of the cave border on the x-axis.
 int fillPercentage = 45; //Percentage of the randomised environment that will be filled.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
-const int deathChance = 75;
+const int deathChance = 100;
 const int birthChance = 100;
-const float depth = -1.0f; //###
+const float depth = -1.0f;
 
 //Simplex Noise.
 float noiseScale = 40.0f;
@@ -111,21 +111,10 @@ int currentCave[caveWidth][caveHeight];
 int tempCave[caveWidth][caveHeight];
 Cell startCell = Cell(0,0);
 
-//###Presets.
-//Cave 1 (Random): FP: 50, BT: 4, DT: 4, DC: 75, BC: 100, Iter: 3.
-//Cave 2 (Simplex): FP: 45, Scale: 40.
-//Cave 3 (Simplex): FP: 45, Scale: 15.
-//Cave 4 (Simplex): FP: 55, Scale: 20.
-//Cave 5 (Simplex): FP: 50, Scale: 40. //Remove small occupied areas.
-
 //Camera.
 float cameraPanX = 120.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
-
-//Colours.
-float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
-float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -197,17 +186,6 @@ void randomiseCave() {
 	}
 	//Smooths the generated noise over 20 iterations.
 	smoothCave(20);
-}
-
-
-//Removes occupied areas with an area smaller than the given size. //###
-void removeOccupiedAreas() {
-
-}
-
-//Adds a free area to the cave of given size and location. //###
-void addFreeArea() {
-
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -346,6 +324,110 @@ void fillInaccessibleAreas(Cell startCell) {
 	memcpy(currentCave, tempCave, sizeof(currentCave));
 }
 
+//Uses flood fill to find all occupied cells connected to a given border cell.
+void floodFillBorder(int x, int y, int target) {
+
+	//Current cell is free.
+	if (currentCave[x][y] == 1) { return; }
+
+	//Sets current cell to the target state.
+	tempCave[x][y] = target;
+
+	queue<Cell> cellQueue; //Queue of cells to be checked.
+	Cell n = Cell(x,y); //Current cell.
+	cellQueue.push(n);
+
+	while (!cellQueue.empty()) {
+		n = cellQueue.front();
+		cellQueue.pop();
+
+		//If the West cell is not part of the border and is free.
+		if (n.x-1 >= border && currentCave[n.x-1][n.y] == 0) {
+			currentCave[n.x-1][n.y] = 1;
+			tempCave[n.x-1][n.y] = 0;
+			Cell west = Cell(n.x-1, n.y);
+			cellQueue.push(west);
+		}
+		//If the East cell is not part of the border and is free.
+		if (n.x+1 <= caveWidth - border - 1 && currentCave[n.x+1][n.y] == 0) {
+			currentCave[n.x+1][n.y] = 1;
+			tempCave[n.x+1][n.y] = 0;
+			Cell east = Cell(n.x+1, n.y);
+			cellQueue.push(east);
+		}
+		//If the South cell is not part of the border and is free.
+		if (n.y-1 >= border && currentCave[n.x][n.y-1] == 0) {
+			currentCave[n.x][n.y-1] = 1;
+			tempCave[n.x][n.y-1] = 0;
+			Cell south = Cell(n.x, n.y-1);
+			cellQueue.push(south);
+		}
+		//If the North cell is not part of the border and is free.
+		if (n.y+1 <= caveHeight - border - 1 && currentCave[n.x][n.y+1] == 0) {
+			currentCave[n.x][n.y+1] = 1;
+			tempCave[n.x][n.y+1] = 0;
+			Cell north = Cell(n.x, n.y+1);
+			cellQueue.push(north);
+		}
+	}
+}
+
+//Removes occupied areas with an area smaller than the given size. //###
+void removeNonBorderOccupiedAreas() {
+
+	//Sets the temporary cave to be fully occupied.
+  for (int i = 0; i < caveWidth; i++) {
+		for (int j = 0; j < caveHeight; j++) {
+			tempCave[i][j] = 1;
+		}
+	}
+
+	//Iterates over cells in the cave border.
+	for (int y = border; y < caveHeight - border; y++) {
+		floodFillBorder(border - 1,y,0);
+		floodFillBorder(caveWidth - border,y,0);
+	}
+	for (int x = border; x < caveWidth - border; x++) {
+		floodFillBorder(x,border - 1,0);
+		floodFillBorder(x,caveHeight - border,0);
+	}
+
+	//Re-adds the borders into the cave.
+	for (int y = 0; y < caveHeight; y++) {
+		//Left Border.
+		for (int x = 0; x < border; x++) {
+			tempCave[x][y] = 0;
+		}
+		//Right Border.
+		for (int x = caveWidth - border; x < caveWidth; x++) {
+			tempCave[x][y] = 0;
+		}
+	}
+	for (int x = border; x < caveWidth - border; x++) {
+		//Bottom Border.
+		for (int y = 0; y < border; y++) {
+			tempCave[x][y] = 0;
+		}
+		//Top Border.
+		for (int y = caveHeight - border; y < caveHeight; y++) {
+			tempCave[x][y] = 0;
+		}
+	}
+
+	memcpy(currentCave, tempCave, sizeof(tempCave));
+}
+
+//Generates a cave with no inaccessible areas and smoothed.
+void generateCave() {
+	fillPercentage = (rand() % 20) + 40; //Range: 40 -> 60.
+	noiseScale = (rand() % 90) + 10; //Range: 10 -> 100.
+	randomiseCave(); //Uses simplex noise to create a random cave.
+	smoothCave(25); //Uses cellular automata to smooth the cave cells.
+	startCell = findStartCell(); //Finds an appropraite starting location.
+	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
+	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
+}
+
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Displays the control text at the top-left of the window.
@@ -354,50 +436,19 @@ void displayControls() {
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'r' - Reset", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'n' - Scale Noise Up", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'m' - Scale Noise Down", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"' ' - Smooth (1 iter.)", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 240, 0.15f, (char *)"'c' - Smooth (20 iter.)", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 270, 0.15f, (char *)"'k' - Decrease Fill Percentage", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 300, 0.15f, (char *)"'l' - Increase Fill Percentage", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'n' - Scale Noise Up", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'m' - Scale Noise Down", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"' ' - Generate Cave", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"'k' - Decrease Fill Percentage", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 240, 0.15f, (char *)"'l' - Increase Fill Percentage", textColour);
 }
 
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+//Draws the cave structure, uses the marching squares algorithm to smooth edges.
+void drawCave() {
 
-void idle() {
-	//usleep(2500); // in microseconds
-	//glutPostRedisplay();
-}
-
-void display() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//###
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(cameraFOV, (GLdouble)glutGet(GLUT_WINDOW_WIDTH) / (GLdouble)glutGet(GLUT_WINDOW_HEIGHT), 0.1f, 250.0f);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	//Eye Position, Reference Point, Up Vector.
-	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
-	setLight(globalLight);
-
-	//###DEBUG.
-	/*cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
-	cout << " + FOV: " << cameraFOV << endl;
-	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
-	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
-	cout << "[===================================================]" << endl;*/
-
-	glPushMatrix();
-	glEnable(GL_LIGHTING);
-
-	//Draws Cave Background and Border.
-	Draw::drawBackground(depth, caveWidth, caveHeight);
-	Draw::drawBorder(depth, caveWidth, caveHeight);
+	//Colours.
+	float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
+	float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
 
 	//Normals.
 	const float nl[3] = {-1.0f, 0.0f, 0.0f};
@@ -448,6 +499,7 @@ void display() {
 			int br = currentCave[i+1][j] == 0;
 			int vertexInd = (tl << 3) + (tr << 2) + (br << 1) + bl;
 
+			//Look-up table contour lines.
 			switch (vertexInd) {
 				case 1:
 					glBegin(GL_TRIANGLE_STRIP);
@@ -714,186 +766,45 @@ void display() {
 			glPopMatrix();
 		}
 	}
+}
 
-	//###Original Draw Cave.
-	/*for (int i = 0; i < caveWidth; i++) { //For each cave column.
-		for (int j = 0; j < caveHeight; j++) { //For each cave row.
-			if (currentCave[i][j] == 0) { //If cell is free.
-				glPushMatrix();
+/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
-				//Translate to cell position.
-				glTranslatef((float)i, (float)j, 0);
-				glColor3fv(caveFaceColour);
+void idle() {
+	//usleep(2500); // in microseconds
+	//glutPostRedisplay();
+}
 
-				bool top = currentCave[i][j+1] == 1;
-				bool left = currentCave[i-1][j] == 1;
-				bool bottom = currentCave[i][j-1] == 1;
-				bool right = currentCave[i+1][j] == 1;
-				int occupiedNeighbourCount = currentCave[i][j+1] + currentCave[i-1][j] + currentCave[i][j-1] + currentCave[i+1][j];
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				//Camera-Viewing polygon face.
-				glColor3fv(caveFaceColour);
-				glBegin(GL_POLYGON);
-				glNormal3fv(nf); glVertex3f(0.5f, 0.5f, 0);
-				glNormal3fv(nf); glVertex3f(0.5f, -0.5f, 0);
-				glNormal3fv(nf); glVertex3f(-0.5f, -0.5f, 0);
-				glNormal3fv(nf); glVertex3f(-0.5f, 0.5f, 0);
-				glEnd();
+	//###
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(cameraFOV, (GLdouble)glutGet(GLUT_WINDOW_WIDTH) / (GLdouble)glutGet(GLUT_WINDOW_HEIGHT), 0.1f, 250.0f);
 
-				glColor3fv(caveDepthColour);
-				//Depth Face: Top.
-				if (currentCave[i][j+1] == 1) {
-					glBegin(GL_POLYGON);
-					glNormal3fv(nt); glVertex3fv(tr);
-					glNormal3fv(nt); glVertex3fv(tl);
-					glNormal3fv(nt); glVertex3fv(tl_d);
-					glNormal3fv(nt); glVertex3fv(tr_d);
-					glEnd();
-				}
-				//Depth Face: Left.
-				if (currentCave[i-1][j] == 1) {
-					glBegin(GL_POLYGON);
-					glNormal3fv(nl); glVertex3fv(bl);
-					glNormal3fv(nl); glVertex3fv(tl);
-					glNormal3fv(nl); glVertex3fv(tl_d);
-					glNormal3fv(nl); glVertex3fv(bl_d);
-					glEnd();
-				}
-				//Depth Face: Bottom.
-				if (currentCave[i][j-1] == 1) {
-					glBegin(GL_POLYGON);
-					glNormal3fv(nb); glVertex3fv(br);
-					glNormal3fv(nb);glVertex3fv(bl);
-					glNormal3fv(nb);glVertex3fv(bl_d);
-					glNormal3fv(nb);glVertex3fv(br_d);
-					glEnd();
-				}
-				//Depth Face: Right.
-				if (currentCave[i+1][j] == 1) {
-					glBegin(GL_POLYGON);
-					glNormal3fv(nr); glVertex3fv(br);
-					glNormal3fv(nr); glVertex3fv(tr);
-					glNormal3fv(nr); glVertex3fv(tr_d);
-					glNormal3fv(nr); glVertex3fv(br_d);
-					glEnd();
-				}
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
-				glPopMatrix();
-			}
-		}
-	}*/
+	//Eye Position, Reference Point, Up Vector.
+	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
+	setLight(globalLight);
 
+	//###DEBUG.
+	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
+	cout << " + FOV: " << cameraFOV << endl;
+	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
+	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
+	cout << "[===================================================]" << endl;
 
+	glPushMatrix();
+	glEnable(GL_LIGHTING);
 
-	//###Original Draw Cave.
-	/*for (int i = 0; i < caveWidth; i++) { //For each cave column.
-		for (int j = 0; j < caveHeight; j++) { //For each cave row.
-			if (currentCave[i][j] == 0) { //If cell is free.
-				glPushMatrix();
+	//Draws Cave Background then Border then finally the cave structure.
+	Draw::drawBackground(depth, caveWidth, caveHeight);
+	Draw::drawBorder(depth, caveWidth, caveHeight);
+	drawCave();
 
-				//Translate to cell position.
-				glTranslatef((float)i, (float)j, 0);
-				glColor3fv(caveFaceColour);
-
-				bool top = currentCave[i][j+1] == 1;
-				bool left = currentCave[i-1][j] == 1;
-				bool bottom = currentCave[i][j-1] == 1;
-				bool right = currentCave[i+1][j] == 1;
-				int occupiedNeighbourCount = currentCave[i][j+1] + currentCave[i-1][j] + currentCave[i][j-1] + currentCave[i+1][j];
-
-				if (occupiedNeighbourCount == 2 && ((top && right) || (bottom && left))) {
-					//Camera-Viewing polygon face.
-					glColor3fv(caveFaceColour);
-					glBegin(GL_POLYGON);
-					glNormal3fv(nf); glVertex3fv(tl);
-					glNormal3fv(nf); glVertex3fv(br);
-					glNormal3fv(nf);
-					top ? glVertex3fv(bl) : glVertex3fv(tr);
-					glEnd();
-
-					glColor3fv(caveDepthColour);
-					//Depth face.
-					glBegin(GL_QUAD_STRIP);
-					top ? glNormal3fv(ntr) : glNormal3fv(nbl);
-					glVertex3fv(tl);
-					glVertex3fv(tl_d);
-					glVertex3fv(br);
-					glVertex3fv(br_d);
-					glEnd();
-				}
-				else if (occupiedNeighbourCount == 2 && ((right && bottom) || (left && top))) {
-					//Camera-Viewing polygon face.
-					glColor3fv(caveFaceColour);
-					glBegin(GL_POLYGON);
-					glNormal3fv(nf); glVertex3fv(tr);
-					glNormal3fv(nf); glVertex3fv(bl);
-					glNormal3fv(nf);
-					bottom ? glVertex3fv(tl) : glVertex3fv(br);
-					glEnd();
-
-					glColor3fv(caveDepthColour);
-					//Depth face.
-					glBegin(GL_QUAD_STRIP);
-					bottom ? glNormal3fv(nbr) : glNormal3fv(ntl);
-					glVertex3fv(tr);
-					glVertex3fv(tr_d);
-					glVertex3fv(bl);
-					glVertex3fv(bl_d);
-					glEnd();
-				}
-				else {
-					//Camera-Viewing polygon face.
-					glColor3fv(caveFaceColour);
-					glBegin(GL_POLYGON);
-					glNormal3fv(nf); glVertex3f(0.5f, 0.5f, 0);
-					glNormal3fv(nf); glVertex3f(0.5f, -0.5f, 0);
-					glNormal3fv(nf); glVertex3f(-0.5f, -0.5f, 0);
-					glNormal3fv(nf); glVertex3f(-0.5f, 0.5f, 0);
-					glEnd();
-
-					glColor3fv(caveDepthColour);
-					//Depth Face: Top.
-					if (currentCave[i][j+1] == 1) {
-						glBegin(GL_POLYGON);
-						glNormal3fv(nt); glVertex3fv(tr);
-						glNormal3fv(nt); glVertex3fv(tl);
-						glNormal3fv(nt); glVertex3fv(tl_d);
-						glNormal3fv(nt); glVertex3fv(tr_d);
-						glEnd();
-					}
-					//Depth Face: Left.
-					if (currentCave[i-1][j] == 1) {
-						glBegin(GL_POLYGON);
-						glNormal3fv(nl); glVertex3fv(bl);
-						glNormal3fv(nl); glVertex3fv(tl);
-						glNormal3fv(nl); glVertex3fv(tl_d);
-						glNormal3fv(nl); glVertex3fv(bl_d);
-						glEnd();
-					}
-					//Depth Face: Bottom.
-					if (currentCave[i][j-1] == 1) {
-						glBegin(GL_POLYGON);
-						glNormal3fv(nb); glVertex3fv(br);
-						glNormal3fv(nb);glVertex3fv(bl);
-						glNormal3fv(nb);glVertex3fv(bl_d);
-						glNormal3fv(nb);glVertex3fv(br_d);
-						glEnd();
-					}
-					//Depth Face: Right.
-					if (currentCave[i+1][j] == 1) {
-						glBegin(GL_POLYGON);
-						glNormal3fv(nr); glVertex3fv(br);
-						glNormal3fv(nr); glVertex3fv(tr);
-						glNormal3fv(nr); glVertex3fv(tr_d);
-						glNormal3fv(nr); glVertex3fv(br_d);
-						glEnd();
-					}
-				}
-
-				glPopMatrix();
-			}
-		}
-	}*/
 	glPopMatrix();
 
 	//Draws a drone at the starting location. //###
@@ -915,9 +826,9 @@ void reshape(int w, int h) {
 void mouseInput(int button, int state, int x, int y) {
 	switch (button) {
 		//Scroll Up / Zoom Out.
-		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 5.0f; break;
+		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 2.5f; break;
 		//Scroll Down / Zoom In.
-		case 4: cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 5.0f; break;
+		case 4: cameraFOV = (cameraFOV >= 170.0f) ? 170.0f : cameraFOV + 2.5f; break;
 	}
 
 	//Reshapes the display.
@@ -931,12 +842,9 @@ void keyboardInput(unsigned char key, int, int) {
 		//Exits the program.
 		case 'q': exit(1); break;
 		//Zoom Out.
-		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 5.0f; break;
+		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 2.5f; break;
 		//Zoom In.
-		case '[': cameraFOV = (cameraFOV >= 150.0f) ? 150.0f : cameraFOV + 5.0f; break;
-		//Randomise Cave. Also resets if already set.
-		case 'r':
-		case 'R': randomiseCave(); break;
+		case '[': cameraFOV = (cameraFOV >= 170.0f) ? 170.0f : cameraFOV + 2.5f; break;
 		//###Noise Scale Up.
 		case 'n': noiseScale += 1.0f; randomiseCave(); break;
 		//###Noise Scale Down.
@@ -945,12 +853,9 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'k': fillPercentage = (fillPercentage <= 0) ? 0 : fillPercentage - 1; randomiseCave(); break;
 		//###Fill Percentage Increase.
 		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
-		//###Improve Cave Features.
-		case ' ':
-			smoothCave(25);
-		  startCell = findStartCell();
-			fillInaccessibleAreas(startCell);
-			break;
+		//Generates an improved cave.
+		case ' ': generateCave(); break;
+		case 'p': removeNonBorderOccupiedAreas(); break;
 	}
 	glutPostRedisplay();
 }
@@ -1006,7 +911,7 @@ int main(int argc, char* argv[]) {
 	glutIdleFunc(idle);
 
 	//Cave Generation.
-	randomiseCave();
+	generateCave();
 
 	init();
 	glutMainLoop();

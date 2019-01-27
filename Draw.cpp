@@ -4,34 +4,48 @@
 
 //Draw Background.
 void Draw::drawBackground(float depth, float caveWidth, float caveHeight) {
+
+	//Components of border coordinates.
+	const float minX = -0.5f;
+	const float minY = -0.5f;
+	const float maxX = caveWidth - 1.5f;
+	const float maxY = caveHeight - 1.5f;
+
+	//Draws the background.
 	glColor3f(0.175f, 0.075f, 0.0f);
 	glPushMatrix();
-	glTranslatef(-0.5f, -0.5f, 0);
 	glBegin(GL_POLYGON);
-	glVertex3f(0, 0, depth);
-	glVertex3f(caveWidth, 0, depth);
-	glVertex3f(caveWidth, caveHeight, depth);
-	glVertex3f(0, caveHeight, depth);
+	glVertex3f(minX, minY, depth);
+	glVertex3f(maxX, minY, depth);
+	glVertex3f(maxX, maxY, depth);
+	glVertex3f(minX, maxY, depth);
 	glEnd();
 	glPopMatrix();
 }
 
 //Draws the border polygons.
 void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
+
+	//Components of border coordinates.
+	const float minX = -0.5f;
+	const float minY = -0.5f;
+	const float maxX = caveWidth - 1.5f;
+	const float maxY = caveHeight - 1.5f;
+
+	//Draws the border.
 	glColor3f(0.3f, 0.2f, 0.3f);
 	glPushMatrix();
-	glTranslatef(-0.5f, -0.5f, 0.0f);
 	glBegin(GL_QUAD_STRIP);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 0, depth);
-	glVertex3f(caveWidth, 0, 0);
-	glVertex3f(caveWidth, 0, depth);
-	glVertex3f(caveWidth, caveHeight, 0);
-	glVertex3f(caveWidth, caveHeight, depth);
-	glVertex3f(0, caveHeight, 0);
-	glVertex3f(0, caveHeight, depth);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 0, depth);
+	glVertex3f(minX, minY, 0);
+	glVertex3f(minX, minY, depth);
+	glVertex3f(maxX, minY, 0);
+	glVertex3f(maxX, minY, depth);
+	glVertex3f(maxX, maxY, 0);
+	glVertex3f(maxX, maxY, depth);
+	glVertex3f(minX, maxY, 0);
+	glVertex3f(minX, maxY, depth);
+	glVertex3f(minX, minY, 0);
+	glVertex3f(minX, minY, depth);
 	glEnd();
 	glPopMatrix();
 }
