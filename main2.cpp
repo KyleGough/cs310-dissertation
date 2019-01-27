@@ -128,7 +128,7 @@ int getNeighbourCount(int x, int y) {
 	int count = 0;
 	for (int i = x - 1; i <= x + 1; i++) {
 		for (int j = y - 1; j <= y + 1; j++) {
-			if (!(i == x && j == y) && currentCave[i][j] == Free) {
+			if (!(i == x && j == y) && currentCave[i][j] == 1) {
 				count++;
 			}
 		}
@@ -143,10 +143,10 @@ void smoothCave(int iterations) {
 			for (int x = border; x < caveWidth - border; x++) { //For each column.
 				int neighbours = getNeighbourCount(x, y);
 				if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
-					tempCave[x][y] = Free; //Cell is born.
+					tempCave[x][y] = 1; //Cell is born.
 				}
 				else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
-					tempCave[x][y] = Occupied; //Cell dies.
+					tempCave[x][y] = 0; //Cell dies.
 				}
 				else {
 					tempCave[x][y] = currentCave[x][y]; //Maintains the cell state.
@@ -170,8 +170,8 @@ void randomiseCave() {
 		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
 			if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
 				//Cave border.
-				currentCave[x][y] = Occupied;
-				tempCave[x][y] = Occupied; //###
+				currentCave[x][y] = 0;
+				tempCave[x][y] = 0;
 			}
 			else {
 				//Maps each x,y coordinate to a scaled and offset coordinate.
@@ -181,7 +181,7 @@ void randomiseCave() {
 				float noise = SimplexNoise::noise(mappedX, mappedY);
 				//Thresholds the noise value into either a free or occupied cell.
 				float noiseThreshold = (fillPercentage / 50.0f) - 1.0f;
-				currentCave[x][y] = (noise <= noiseThreshold) ? Occupied : Free;
+				currentCave[x][y] = (noise <= noiseThreshold) ? 0 : 1;
 			}
 		}
 	}
@@ -191,58 +191,11 @@ void randomiseCave() {
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
-//Uses flood fill to target certain cells and modify cells in the temp and current cave accordingly.
-void floodFillReplace(int x, int y, int criteria, int currentTarget, int tempTarget) {
-	//Current cell is free.
-	if (currentCave[x][y] == currentTarget) { return; }
-
-	//Sets current cell to the target state.
-	tempCave[x][y] = tempTarget;
-
-	queue<Cell> cellQueue; //Queue of cells to be checked.
-	Cell n = Cell(x,y); //Current cell.
-	cellQueue.push(n);
-
-	while (!cellQueue.empty()) {
-		n = cellQueue.front();
-		cellQueue.pop();
-
-		//If the West cell is not part of the border and is free.
-		if (n.x-1 >= border && currentCave[n.x-1][n.y] == criteria) {
-			currentCave[n.x-1][n.y] = currentTarget;
-			tempCave[n.x-1][n.y] = tempTarget;
-			Cell west = Cell(n.x-1, n.y);
-			cellQueue.push(west);
-		}
-		//If the East cell is not part of the border and is free.
-		if (n.x+1 <= caveWidth - border - 1 && currentCave[n.x+1][n.y] == criteria) {
-			currentCave[n.x+1][n.y] = currentTarget;
-			tempCave[n.x+1][n.y] = tempTarget;
-			Cell east = Cell(n.x+1, n.y);
-			cellQueue.push(east);
-		}
-		//If the South cell is not part of the border and is free.
-		if (n.y-1 >= border && currentCave[n.x][n.y-1] == criteria) {
-			currentCave[n.x][n.y-1] = currentTarget;
-			tempCave[n.x][n.y-1] = tempTarget;
-			Cell south = Cell(n.x, n.y-1);
-			cellQueue.push(south);
-		}
-		//If the North cell is not part of the border and is free.
-		if (n.y+1 <= caveHeight - border - 1 && currentCave[n.x][n.y+1] == criteria) {
-			currentCave[n.x][n.y+1] = currentTarget;
-			tempCave[n.x][n.y+1] = tempTarget;
-			Cell north = Cell(n.x, n.y+1);
-			cellQueue.push(north);
-		}
-	}
-}
-
 //Performs a flood fill at a given position and counts how many cells are captured in the fill.
-int floodFillCount(int x, int y, int target) {
+int floodFill(int x, int y, int target) {
 
 	//Current cell is occupied.
-	if (tempCave[x][y] == Occupied) { return 0; }
+	if (tempCave[x][y] == 0) { return 0; }
 
 	//Sets current cell to the target state.
 	tempCave[x][y] = target;
@@ -257,28 +210,28 @@ int floodFillCount(int x, int y, int target) {
 		cellQueue.pop();
 
 		//If the West cell is not part of the border and is free.
-		if (n.x-1 >= border && tempCave[n.x-1][n.y] == Free) {
+		if (n.x-1 >= border && tempCave[n.x-1][n.y] == 1) {
 			tempCave[n.x-1][n.y] = target; //Sets the west cell to target state.
 			Cell west = Cell(n.x-1, n.y);
 			cellQueue.push(west);
 			count++;
 		}
 		//If the East cell is not part of the border and is free.
-		if (n.x+1 <= caveWidth - border - 1 && tempCave[n.x+1][n.y] == Free) {
+		if (n.x+1 <= caveWidth - border - 1 && tempCave[n.x+1][n.y] == 1) {
 			tempCave[n.x+1][n.y] = target; //Sets the east cell to target state.
 			Cell east = Cell(n.x+1, n.y);
 			cellQueue.push(east);
 			count++;
 		}
 		//If the South cell is not part of the border and is free.
-		if (n.y-1 >= border && tempCave[n.x][n.y-1] == Free) {
+		if (n.y-1 >= border && tempCave[n.x][n.y-1] == 1) {
 			tempCave[n.x][n.y-1] = target; //Sets the south cell to target state.
 			Cell south = Cell(n.x, n.y-1);
 			cellQueue.push(south);
 			count++;
 		}
 		//If the North cell is not part of the border and is free.
-		if (n.y+1 <= caveHeight - border - 1 && tempCave[n.x][n.y+1] == Free) {
+		if (n.y+1 <= caveHeight - border - 1 && tempCave[n.x][n.y+1] == 1) {
 			tempCave[n.x][n.y+1] = target; //Sets the north cell to target state.
 			Cell north = Cell(n.x, n.y+1);
 			cellQueue.push(north);
@@ -299,7 +252,7 @@ Cell findStartCell() {
 	for (int x = border; x < caveWidth - border; x++) {
 		for (int y = border; y < caveHeight - border; y++) {
 			//Uses flood fill to see how many cells occupy the same free space.
-			int count = floodFillCount(x,y,Occupied);
+			int count = floodFill(x,y,0);
 			if (count > max) {
 				max = count;
 				startCell.x = x;
@@ -317,14 +270,107 @@ void fillInaccessibleAreas(Cell startCell) {
 	//Sets the temporary cave to be fully occupied.
   for (int i = 0; i < caveWidth; i++) {
 		for (int j = 0; j < caveHeight; j++) {
-			tempCave[i][j] = Occupied;
+			tempCave[i][j] = 0;
 		}
 	}
 
-	//Converts inaccessible free cells to occupied cells.
-	floodFillReplace(startCell.x, startCell.y, Free, Occupied, Free);
+	int x = startCell.x;
+	int y = startCell.y;
+
+	//Current cell is occupied.
+	if (currentCave[x][y] == 0) { return; }
+
+	//Sets current cell to free.
+	tempCave[x][y] = 1;
+
+	queue<Cell> cellQueue; //Queue of cells to be checked.
+	Cell n = Cell(x,y); //Current cell.
+	cellQueue.push(n);
+
+	while (!cellQueue.empty()) {
+		n = cellQueue.front();
+		cellQueue.pop();
+
+		//If the West cell is not part of the border and is free.
+		if (n.x-1 >= border && currentCave[n.x-1][n.y] == 1) {
+			currentCave[n.x-1][n.y] = 0; //Sets the west cell to occupied.
+			tempCave[n.x-1][n.y] = 1; //Sets the west cell to free.
+			Cell west = Cell(n.x-1, n.y);
+			cellQueue.push(west);
+		}
+		//If the East cell is not part of the border and is free.
+		if (n.x+1 <= caveWidth - border - 1 && currentCave[n.x+1][n.y] == 1) {
+			currentCave[n.x+1][n.y] = 0; //Sets the east cell to occupied.
+			tempCave[n.x+1][n.y] = 1; //Sets the east cell to free.
+			Cell east = Cell(n.x+1, n.y);
+			cellQueue.push(east);
+		}
+		//If the South cell is not part of the border and is free.
+		if (n.y-1 >= border && currentCave[n.x][n.y-1] == 1) {
+			currentCave[n.x][n.y-1] = 0; //Sets the south cell to occupied.
+			tempCave[n.x][n.y-1] = 1; //Sets the south cell to free.
+			Cell south = Cell(n.x, n.y-1);
+			cellQueue.push(south);
+		}
+		//If the North cell is not part of the border and is free.
+		if (n.y+1 <= caveHeight - border - 1 && currentCave[n.x][n.y+1] == 1) {
+			currentCave[n.x][n.y+1] = 0; //Sets the north cell to target state.
+			tempCave[n.x][n.y+1] = 1; //Sets the north cell to target state.
+			Cell north = Cell(n.x, n.y+1);
+			cellQueue.push(north);
+		}
+	}
+
 	//Copies the improved cave to the current cave structure.
 	memcpy(currentCave, tempCave, sizeof(currentCave));
+}
+
+//Uses flood fill to find all occupied cells connected to a given border cell.
+void floodFillBorder(int x, int y, int target) {
+
+	//Current cell is free.
+	if (currentCave[x][y] == 1) { return; }
+
+	//Sets current cell to the target state.
+	tempCave[x][y] = target;
+
+	queue<Cell> cellQueue; //Queue of cells to be checked.
+	Cell n = Cell(x,y); //Current cell.
+	cellQueue.push(n);
+
+	while (!cellQueue.empty()) {
+		n = cellQueue.front();
+		cellQueue.pop();
+
+		//If the West cell is not part of the border and is free.
+		if (n.x-1 >= border && currentCave[n.x-1][n.y] == 0) {
+			currentCave[n.x-1][n.y] = 1;
+			tempCave[n.x-1][n.y] = 0;
+			Cell west = Cell(n.x-1, n.y);
+			cellQueue.push(west);
+		}
+		//If the East cell is not part of the border and is free.
+		if (n.x+1 <= caveWidth - border - 1 && currentCave[n.x+1][n.y] == 0) {
+			currentCave[n.x+1][n.y] = 1;
+			tempCave[n.x+1][n.y] = 0;
+			Cell east = Cell(n.x+1, n.y);
+			cellQueue.push(east);
+		}
+		//If the South cell is not part of the border and is free.
+		if (n.y-1 >= border && currentCave[n.x][n.y-1] == 0) {
+			currentCave[n.x][n.y-1] = 1;
+			tempCave[n.x][n.y-1] = 0;
+			Cell south = Cell(n.x, n.y-1);
+			cellQueue.push(south);
+		}
+		//If the North cell is not part of the border and is free.
+		if (n.y+1 <= caveHeight - border - 1 && currentCave[n.x][n.y+1] == 0) {
+			currentCave[n.x][n.y+1] = 1;
+			tempCave[n.x][n.y+1] = 0;
+			Cell north = Cell(n.x, n.y+1);
+			cellQueue.push(north);
+		}
+	}
 }
 
 //Removes occupied areas with an area smaller than the given size. //###
@@ -333,48 +379,46 @@ void removeNonBorderOccupiedAreas() {
 	//Sets the temporary cave to be fully occupied.
   for (int i = 0; i < caveWidth; i++) {
 		for (int j = 0; j < caveHeight; j++) {
-			tempCave[i][j] = Free;
+			tempCave[i][j] = 1;
 		}
 	}
 
 	//Iterates over cells in the cave border.
-	//Uses flood fill to find all occupied cells connected to a given border cell
-	//and dismisses occupied cells not connected to a border cell.
 	for (int y = border; y < caveHeight - border; y++) {
-		floodFillReplace(border - 1, y, Occupied, Free, Occupied);
-		floodFillReplace(caveWidth - border, y, Occupied, Free, Occupied);
+		floodFillBorder(border - 1,y,0);
+		floodFillBorder(caveWidth - border,y,0);
 	}
 	for (int x = border; x < caveWidth - border; x++) {
-		floodFillReplace(x, border - 1, Occupied, Free, Occupied);
-		floodFillReplace(x, caveHeight - border, Occupied, Free, Occupied);
+		floodFillBorder(x,border - 1,0);
+		floodFillBorder(x,caveHeight - border,0);
 	}
 
 	//Re-adds the borders into the cave.
 	for (int y = 0; y < caveHeight; y++) {
 		//Left Border.
 		for (int x = 0; x < border; x++) {
-			tempCave[x][y] = Occupied;
+			tempCave[x][y] = 0;
 		}
 		//Right Border.
 		for (int x = caveWidth - border; x < caveWidth; x++) {
-			tempCave[x][y] = Occupied;
+			tempCave[x][y] = 0;
 		}
 	}
 	for (int x = border; x < caveWidth - border; x++) {
 		//Bottom Border.
 		for (int y = 0; y < border; y++) {
-			tempCave[x][y] = Occupied;
+			tempCave[x][y] = 0;
 		}
 		//Top Border.
 		for (int y = caveHeight - border; y < caveHeight; y++) {
-			tempCave[x][y] = Occupied;
+			tempCave[x][y] = 0;
 		}
 	}
 
 	memcpy(currentCave, tempCave, sizeof(tempCave));
 }
 
-//Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
+//Generates a cave with no inaccessible areas and smoothed.
 void generateCave() {
 	fillPercentage = (rand() % 20) + 40; //Range: 40 -> 60.
 	noiseScale = (rand() % 90) + 10; //Range: 10 -> 100.
@@ -450,10 +494,10 @@ void drawCave() {
 			glColor3fv(caveFaceColour);
 
 			//Gets a 4-bit value based on occupied cells in the block for use by the marching squares algorithm.
-			int tr = currentCave[i+1][j+1] == Occupied;
-			int tl = currentCave[i][j+1] == Occupied;
-			int bl = currentCave[i][j] == Occupied;
-			int br = currentCave[i+1][j] == Occupied;
+			int tr = currentCave[i+1][j+1] == 0;
+			int tl = currentCave[i][j+1] == 0;
+			int bl = currentCave[i][j] == 0;
+			int br = currentCave[i+1][j] == 0;
 			int vertexInd = (tl << 3) + (tr << 2) + (br << 1) + bl;
 
 			//Look-up table contour lines.
