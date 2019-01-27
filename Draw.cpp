@@ -1,5 +1,7 @@
+#define _USE_MATH_DEFINES
 #include <GL/glut.h>
 #include <string.h>
+#include <cmath>
 #include "Draw.h"
 
 //Draw Background.
@@ -74,7 +76,7 @@ void Draw::drawText(int x, int y, float scale, char* text, float* textColour) {
 }
 
 //Draws a drone at a given position.
-void Draw::drawDrone(float x, float y, float depth) {
+void Draw::drawDrone(float x, float y, float depth, float searchRange) {
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 0.0f, 0.0f); //Red.
@@ -89,6 +91,9 @@ void Draw::drawDrone(float x, float y, float depth) {
 
 	//Bounding Box.
 	drawDroneBoundingBox(depth + 0.01f);
+
+	//Search Range.
+	drawDroneSearchingRange(searchRange, depth / 2.0f);
 
 	glEnable(GL_LIGHTING);
 	glPopMatrix();
@@ -122,6 +127,23 @@ void Draw::drawDroneBoundingBox(float depth) {
 
 	glVertex3f(boxPos, boxNeg, 0); //Front Bottom-Right.
 	glVertex3f(boxPos, boxNeg, depth); //Back Bottom-Right.
+	glEnd();
+	glDisable(GL_LINE_SMOOTH);
+}
+
+void Draw::drawDroneSearchingRange(float searchRange, float depth) {
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glEnable(GL_LINE_SMOOTH);
+	glBegin(GL_LINE_LOOP);
+
+	int segments = 32;
+	for (int i = 0; i < segments; i++) {
+		float angle = 2.0f * M_PI * float(i) / float(segments);
+		float x = searchRange * cos(angle);
+		float y = searchRange * sin(angle);
+		glVertex3f(x, y, depth);
+	}
+
 	glEnd();
 	glDisable(GL_LINE_SMOOTH);
 }

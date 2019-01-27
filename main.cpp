@@ -765,7 +765,7 @@ void display() {
 	glPopMatrix();
 
 	//Draws a drone at the starting location. //###
-	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth);
+	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth, 5.0f);
 
 	displayControls();
 	glutSwapBuffers();
