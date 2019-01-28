@@ -12,6 +12,7 @@
 #include <queue>
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
+#include "Drone.h" //Drone object and functions.
 using namespace std;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -116,6 +117,9 @@ Cell startCell = Cell(0,0);
 float cameraPanX = 120.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
+
+//Drone.
+Drone droneA;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -383,6 +387,10 @@ void generateCave() {
 	startCell = findStartCell(); //Finds an appropraite starting location.
 	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
 	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
+
+	//###
+	Drone::setParams(caveWidth, caveHeight);
+	droneA.setPosition(startCell.x, startCell.y);
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -401,7 +409,7 @@ void displayControls() {
 }
 
 //Draws the cave structure, uses the marching squares algorithm to smooth edges.
-void drawCave() {
+void renderCave() {
 
 	//Colours.
 	float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
@@ -725,6 +733,13 @@ void drawCave() {
 	}
 }
 
+//###
+void renderDrone() {
+	//Draws a drone at the starting location. //###
+	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth, 5.0f);
+}
+
+
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
@@ -760,13 +775,10 @@ void display() {
 	//Draws Cave Background then Border then finally the cave structure.
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
-	drawCave();
+	renderCave();
+	renderDrone();
 
 	glPopMatrix();
-
-	//Draws a drone at the starting location. //###
-	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth, 5.0f);
-
 	displayControls();
 	glutSwapBuffers();
 }
@@ -812,7 +824,8 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
 		//Generates an improved cave.
 		case ' ': generateCave(); break;
-		case 'p': removeNonBorderOccupiedAreas(); break;
+		//Drone debug###
+		case 'p': droneA.sense(); break;
 	}
 	glutPostRedisplay();
 }
