@@ -13,6 +13,7 @@
 #include <vector>
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
+#include "Cell.h" //Cell struct.
 #include "Drone.h" //Drone object and functions.
 using namespace std;
 
@@ -79,14 +80,6 @@ void setLight(const Light& light) {
 	glLightfv(light.name, GL_POSITION, light.position);
 	//glLightf(light.name, GL_SPOT_CUTOFF, 60.0f);
 }
-
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
-
-struct Cell {
-	int x;
-	int y;
-	Cell(int _x, int _y) : x(_x), y(_y) {}
-};
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 

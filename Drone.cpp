@@ -4,8 +4,14 @@
 #include <GL/glut.h>
 #include <algorithm>
 #include <vector>
+#include "Cell.h"
+#include "SenseCell.h"
 #include "Drone.h"
 using namespace std;
+
+enum MapCell { Free, Occupied, Unknown, Frontier }; //###
+
+
 
 static constexpr float maxVelocity = 0.25f;
 static constexpr float acceleration = 0.1f;
@@ -22,24 +28,8 @@ float orientation; //Orientation: 0 -> Facing North.
 //###List frontierCells; //Free cells that are adjacent to unknowns.
 //###List path; //Position and time pairs.
 
-enum MapCell { Free, Occupied, Unknown, Frontier }; //###
 
-struct Cell {
-	int x;
-	int y;
-	Cell(int _x, int _y) : x(_x), y(_y) {}
-};
-
-struct SenseCell {
-  float x;
-  float y;
-  float range;
-  MapCell type;
-  SenseCell(float _x, float _y, float _range) : x(_x), y(_y), range(_range) {
-    type = Unknown;
-  }
-};
-
+//Less than comparison function for two SenseCell objects.
 bool operator <(const SenseCell& a, const SenseCell& b) {
   return a.range < b.range;
 }
@@ -57,23 +47,6 @@ void Drone::setPosition(int _x, int _y) {
   posX = _x;
   posY = _y;
 }
-
-int getIntersection(float dist1, float dist2, float p1x, float p1y, float p2x, float p2y) {
-  if (dist1 * dist2 >= 0.0f) {
-    return 0;
-  }
-  else if (dist1 == dist2) {
-    return 0;
-  }
-  else {
-    return 1;
-  }
-}
-
-int inBox(float b1x, float b1y, float b2x, float b2y, int axis) {
-
-}
-
 
 //Models the sensing of the immediate local environment.
 void Drone::sense() {
@@ -99,20 +72,16 @@ void Drone::sense() {
   //Sorts the list of cells by distance to the drone in increasing order.
   sort(candidates.begin(), candidates.end());
 
-
-  //Check to make sure you can't sense objects hidden behind something else.
-  //ray from drone center to cell center.
-
   //###
-  cout << "Sense Vector" << endl;
+  /*cout << "Sense Vector" << endl;
   for (vector<SenseCell>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
     int lookup = cave[it->x][it->y];
     cout << '(' << it->x << "," << it->y << ") - " << it->range << " - " << lookup << endl;
-  }
+  }*/
 
-
+  //Check to make sure you can't sense objects hidden behind something else.
+  //ray from drone center to cell center.
   for (vector<SenseCell>::iterator dest = candidates.begin(); dest != candidates.end(); ++dest) {
-
     //If the cell range is 1 or less then immediately add it to the list.
     if (dest->range <= 1) {
       if (cave[dest->x][dest->y] == Free) {
@@ -141,8 +110,8 @@ void Drone::sense() {
         float yCheck = posY + tx0 * (dest->y - posY);
         if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
           collisionDetected = true;
-          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << tx0 << "," << yCheck << "]" << endl;
+          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << tx0 << "," << yCheck << "]" << endl;*/
           break;
         }
       }
@@ -150,8 +119,8 @@ void Drone::sense() {
         float yCheck = posY + tx1 * (dest->y - posY);
         if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
           collisionDetected = true;
-          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << tx1 << "," << yCheck << "]" << endl;
+          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << tx1 << "," << yCheck << "]" << endl;*/
           break;
         }
       }
@@ -159,8 +128,8 @@ void Drone::sense() {
         float xCheck = posX + ty0 * (dest->x - posX);
         if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
           collisionDetected = true;
-          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << ty0 << "," << xCheck << "]" << endl;
+          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << ty0 << "," << xCheck << "]" << endl;*/
           break;
         }
       }
@@ -168,8 +137,8 @@ void Drone::sense() {
         float xCheck = posX + ty1 * (dest->x - posX);
         if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
           collisionDetected = true;
-          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << ty1 << "," << xCheck << "]" << endl;
+          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << ty1 << "," << xCheck << "]" << endl;*/
           break;
         }
       }
@@ -191,7 +160,7 @@ void Drone::sense() {
 
   }
 
-  cout << "FREE CELLS" << endl;
+  /*###cout << "FREE CELLS" << endl;
   for (vector<SenseCell>::iterator it = freeCells.begin(); it != freeCells.end(); ++it) {
     cout << "(" << it->x << "," << it->y << ") ";
   }
@@ -201,7 +170,9 @@ void Drone::sense() {
   for (vector<SenseCell>::iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it) {
     cout << "(" << it->x << "," << it->y << ") ";
   }
-  cout << endl;
+  cout << endl;*/
+
+
 
 }
 
