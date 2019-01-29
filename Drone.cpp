@@ -1,6 +1,9 @@
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
+#include <GL/glut.h>
+#include <algorithm>
+#include <vector>
 #include "Drone.h"
 using namespace std;
 
@@ -10,13 +13,35 @@ static constexpr float searchRange = 5.0f; //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 
-float x; //Current x position in the cave.
-float y; //Current y position in the cave.
+float posX; //Current x position in the cave.
+float posY; //Current y position in the cave.
 float orientation; //Orientation: 0 -> Facing North.
 
 //###int internalMap[caveWidth][caveHeight]; //Known contents of the cave. Start all unknown.
 //###List frontierCells; //Free cells that are adjacent to unknowns.
 //###List path; //Position and time pairs.
+
+enum MapCell { Free, Occupied, Unknown, Frontier }; //###
+
+struct Cell {
+	int x;
+	int y;
+	Cell(int _x, int _y) : x(_x), y(_y) {}
+};
+
+struct SenseCell {
+  float x;
+  float y;
+  float range;
+  MapCell type;
+  SenseCell(float _x, float _y, float _range) : x(_x), y(_y), range(_range) {
+    type = Unknown;
+  }
+};
+
+bool operator <(const SenseCell& a, const SenseCell& b) {
+  return a.range < b.range;
+}
 
 
 //Sets global cave properties.
@@ -27,31 +52,103 @@ void Drone::setParams(int _caveWidth, int _caveHeight) {
 
 //Sets the drone's current position in the cave.
 void Drone::setPosition(int _x, int _y) {
-  x = _x;
-  y = _y;
+  posX = _x;
+  posY = _y;
 }
 
-//Senses the local environment.
+vector<SenseCell> Drone::getCandidateCells() {
+
+  //List of candidate cells.
+  vector<SenseCell> candidates;
+
+
+}
+
+//Models the sensing of the immediate local environment.
 void Drone::sense() {
 
-  for (int i = floor(x - searchRange); i <= ceil(x + searchRange); i++) {
-    for (int j = floor(y - searchRange); j <= ceil(y + searchRange); j++) {
-      //Out-of-bounds cells.
-      if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) {
-        continue;
-      }
+  vector<SenseCell> candidates; //List of candidate cells.
+  vector<SenseCell> freeCells; //List of found free cells.
+  vector<SenseCell> occupiedCells; //List of found occupied cells.
 
-      cout << i << "-" << j << endl;
+  //For each cell in the bounding box of the search range.
+  for (int i = floor(posX - searchRange); i <= ceil(posX + searchRange); i++) {
+    for (int j = floor(posY - searchRange); j <= ceil(posY + searchRange); j++) {
+      //Discard Out-of-bounds cells.
+      if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) { continue; }
+      //Allows only cells in the range.
+      float range = pow(pow(posX - (float)i, 2.0) + pow(posY - (float)j, 2.0), 0.5);
+      if (range > searchRange) { continue; }
+
+      //###
+      cout << i << "," << j << " - " << range << endl;
+      candidates.push_back(SenseCell(i,j,range));
     }
   }
 
-  //Check to make sure you can't sense objects hidden behind something else.
+  //Sorts the list of cells by distance to the drone in increasing order.
+  sort(candidates.begin(), candidates.end());
 
+
+
+  //Check to make sure you can't sense objects hidden behind something else.
   //ray from drone center to cell center.
 
+  //###
+  cout << "Sense Vector" << endl;
+  for (vector<SenseCell>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
+    cout << ' ' << it->range;
+  }
+  cout << endl;
 
+
+  for (vector<SenseCell>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
+
+    //If the cell range is 1 or less then immediately add it to the list.
+    if (it->range <= 1) {
+      if (caveLookup(it->x, it->y) == Free) {
+        freeCells.push_back(*it);
+      }
+      else {
+        occupiedCells.push_back(*it);
+      }
+    }
+    else {
+      //CHECK COLLISIONS.
+      //NO COLLISIONS -> ADD TO APPROPRIATE LIST.
+    }
+
+  }
+
+  //if range <= 1 no collisions to detect.
+  //if free, remove from v add to freecell list.
+  //if occupied, remove from v check collisions, if no collisions add to occupiedlist.
+
+
+  /*//###
+  float dx = float(i) - x;
+  float dy = float(j) - y;
+  //edge cases for dx = 0 or dy = 0;
+  x = x + t * dx;
+  y = y + t * dy;
+  for each cell to check;
+  cx; cy;
+  tx0 = (cx - 0.5f - x) / dx;
+  tx1 = (cx + 0.5f - x) / dx;
+  ty0 = (cy - 0.5f - y) / dy;
+  ty1 = (cy + 0.5f - y) / dy;*/
+  //if any t values are between 0 and 1 inclusive then cell.*/
 
 }
+
+
+
+
+
+
+
+
+
 
 
 
