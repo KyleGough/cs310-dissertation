@@ -10,6 +10,7 @@
 #include <cstring>
 #include <cstdint>
 #include <queue>
+#include <vector>
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
 #include "Drone.h" //Drone object and functions.
@@ -93,10 +94,10 @@ struct Cell {
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
-enum MapCell { Free, Occupied, Unknown, Frontier }; //###
+enum MapCell { Free, Occupied, Unknown, Frontier };
 
 //Generation Parameters.
-int fillPercentage = 45; //Percentage of the randomised environment that will be filled.
+int fillPercentage = 50; //Percentage of the randomised environment that will be filled.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
 const int deathChance = 100;
@@ -114,7 +115,7 @@ int tempCave[caveWidth][caveHeight];
 Cell startCell = Cell(0,0);
 
 //Camera.
-float cameraPanX = 120.0f; //Camera translation along the x-axis.
+float cameraPanX = 125.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
 
@@ -172,10 +173,10 @@ void randomiseCave() {
 	//Iterates through each cell in the cave.
 	for (int y = 0; y < caveHeight; y++) { //For each column in the cave.
 		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
-			if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
-				//Cave border.
+			 //Cave border.
+			 if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
 				currentCave[x][y] = Occupied;
-				tempCave[x][y] = Occupied; //###
+				tempCave[x][y] = Occupied;
 			}
 			else {
 				//Maps each x,y coordinate to a scaled and offset coordinate.
@@ -189,9 +190,8 @@ void randomiseCave() {
 			}
 		}
 	}
-	//Smooths the generated noise over 20 iterations.
-	smoothCave(20);
 }
+
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -295,6 +295,7 @@ int floodFillCount(int x, int y, int target) {
 
 //Uses a series of flood fills to find an appropriate starting cell.
 Cell findStartCell() {
+
 	memcpy(tempCave, currentCave, sizeof(currentCave));
 	Cell startCell = Cell(0,0);
 	int max = 0;
@@ -311,7 +312,7 @@ Cell findStartCell() {
 			}
 		}
 	}
-	cout << " + Start: (" << startCell.x << "," << startCell.y << ") with count: " << max << "." << endl; //###
+	cout << " + Start: (" << startCell.x << "," << startCell.y << ") with count: " << max << "." << endl; //###DEBUG
 	return startCell;
 }
 
@@ -331,7 +332,7 @@ void fillInaccessibleAreas(Cell startCell) {
 	memcpy(currentCave, tempCave, sizeof(currentCave));
 }
 
-//Removes occupied areas with an area smaller than the given size. //###
+//Removes occupied areas not connected to the cave border.
 void removeNonBorderOccupiedAreas() {
 
 	//Sets the temporary cave to be fully occupied.
@@ -389,7 +390,16 @@ void generateCave() {
 	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
 
 	//###
-	Drone::setParams(caveWidth, caveHeight);
+	vector<vector<int>> caveVector;
+	for (int i = 0; i < caveWidth; i++) {
+		vector<int> caveColumn;
+		for (int j = 0; j < caveHeight; j++) {
+			caveColumn.push_back(currentCave[i][j]);
+		}
+		caveVector.push_back(caveColumn);
+	}
+
+	Drone::setParams(caveWidth, caveHeight, caveVector);
 	droneA.setPosition(startCell.x, startCell.y);
 }
 
@@ -462,6 +472,7 @@ void renderCave() {
 			int tl = currentCave[i][j+1] == Occupied;
 			int bl = currentCave[i][j] == Occupied;
 			int br = currentCave[i+1][j] == Occupied;
+
 			int vertexInd = (tl << 3) + (tr << 2) + (br << 1) + bl;
 
 			//Look-up table contour lines.

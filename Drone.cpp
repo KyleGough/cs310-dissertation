@@ -12,6 +12,7 @@ static constexpr float acceleration = 0.1f;
 static constexpr float searchRange = 5.0f; //Range of localised search.
 static int caveWidth;
 static int caveHeight;
+static vector<vector<int>> cave;
 
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
@@ -45,23 +46,16 @@ bool operator <(const SenseCell& a, const SenseCell& b) {
 
 
 //Sets global cave properties.
-void Drone::setParams(int _caveWidth, int _caveHeight) {
+void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave) {
   caveWidth = _caveWidth;
   caveHeight = _caveHeight;
+  cave = _cave;
 }
 
 //Sets the drone's current position in the cave.
 void Drone::setPosition(int _x, int _y) {
   posX = _x;
   posY = _y;
-}
-
-vector<SenseCell> Drone::getCandidateCells() {
-
-  //List of candidate cells.
-  vector<SenseCell> candidates;
-
-
 }
 
 //Models the sensing of the immediate local environment.
@@ -79,9 +73,7 @@ void Drone::sense() {
       //Allows only cells in the range.
       float range = pow(pow(posX - (float)i, 2.0) + pow(posY - (float)j, 2.0), 0.5);
       if (range > searchRange) { continue; }
-
-      //###
-      cout << i << "," << j << " - " << range << endl;
+      //Push the candidate cell onto the vector.
       candidates.push_back(SenseCell(i,j,range));
     }
   }
@@ -90,35 +82,69 @@ void Drone::sense() {
   sort(candidates.begin(), candidates.end());
 
 
-
   //Check to make sure you can't sense objects hidden behind something else.
   //ray from drone center to cell center.
 
   //###
   cout << "Sense Vector" << endl;
   for (vector<SenseCell>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
-    cout << ' ' << it->range;
+    int lookup = cave[it->x][it->y];
+    cout << '(' << it->x << "," << it->y << ") - " << it->range << " - " << lookup << endl;
+  }
+
+
+  for (vector<SenseCell>::iterator dest = candidates.begin(); dest != candidates.end(); ++dest) {
+
+    //If the cell range is 1 or less then immediately add it to the list.
+    if (dest->range <= 1) {
+      if (cave[dest->x][dest->y] == Free) {
+        freeCells.push_back(*dest);
+      }
+      else {
+        occupiedCells.push_back(*dest);
+      }
+      continue;
+    }
+
+    bool collisionDetected = false;
+
+    //Obstacle in line of sight between drone position and destination cell check.
+    for (vector<SenseCell>::iterator occupyCheck = occupiedCells.begin(); occupyCheck != occupiedCells.end(); ++occupyCheck) {
+      float dtx0 = (occupyCheck->x - 0.5f - x) / (dest->x - x);
+      float dtx1 = (occupyCheck->x + 0.5f - x) / (dest->x - x);
+      float dty0 = (occupyCheck->y - 0.5f - y) / (dest->y - y);
+      float dty1 = (occupyCheck->y + 0.5f - y) / (dest->y - y);
+
+      if ((dtx0 >= 0 && dtx0 <= 1) && (dtx1 >= 0 && dtx1 <= 1) && (dty0 >= 0 && dty0 <= 1) && (dty1 >= 0 && dty1 <= 1)) {
+        cout << "COLLISION at (" << dest->x << "," << dest->y << ")";
+        cout << "[" << dtx0 << "," << dtx1 << "," << dty0 << "," << dty1 << "]" << endl;
+        collisionDetected = true;
+        break;
+      }
+    }
+
+    if (!collisionDetected) {
+      if (cave[dest->x][dest->y] == Free) {
+        freeCells.push_back(*dest);
+      }
+      else {
+        occupiedCells.push_back(*dest);
+      }
+    }
+
+  }
+
+  cout << "FREE CELLS" << endl;
+  for (vector<SenseCell>::iterator it = freeCells.begin(); it != freeCells.end(); ++it) {
+    cout << "(" << it->x << "," << it->y << ") ";
   }
   cout << endl;
 
-
-  for (vector<SenseCell>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
-
-    //If the cell range is 1 or less then immediately add it to the list.
-    if (it->range <= 1) {
-      if (caveLookup(it->x, it->y) == Free) {
-        freeCells.push_back(*it);
-      }
-      else {
-        occupiedCells.push_back(*it);
-      }
-    }
-    else {
-      //CHECK COLLISIONS.
-      //NO COLLISIONS -> ADD TO APPROPRIATE LIST.
-    }
-
+  cout << "OCCUPIED CELLS" << endl;
+  for (vector<SenseCell>::iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it) {
+    cout << "(" << it->x << "," << it->y << ") ";
   }
+  cout << endl;
 
   //if range <= 1 no collisions to detect.
   //if free, remove from v add to freecell list.
