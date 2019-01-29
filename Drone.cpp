@@ -179,12 +179,14 @@ void Drone::sense() {
 }
 
 void Drone::updateInternalMap() {
+  //initialise internalmap with all unknowns.
+
   //for each in free and occupied.
   //if unknown update accordingly.
 }
 
 void Drone::findFrontierCells() {
-  
+
 }
 
 

@@ -40,6 +40,10 @@ const Material globalMaterial = {
 	76.8f*/
 };
 
+//Colours.
+float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
+float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
+
 //Sets the properties of a given material.
 void setMaterial(const Material& material) {
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material.ambient);

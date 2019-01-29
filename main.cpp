@@ -350,10 +350,8 @@ void displayControls() {
 
 //Draws the cave structure, features no smoothing.
 void renderCaveNormal() {
-	//Colours.
-	float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
-	float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
 
+	//For each cell in the cave.
 	for (int i = 0; i < caveWidth; i++) {
 		for (int j = 0; j < caveHeight; j++) {
 			if (currentCave[i][j] == Occupied) {
@@ -361,6 +359,7 @@ void renderCaveNormal() {
 				//Translate to cell position.
 				glTranslatef((float)i, (float)j, 0);
 
+				//Main face.
 				glColor3fv(caveFaceColour);
 				if (currentCave[i][j] == Occupied) {
 					glBegin(GL_TRIANGLE_STRIP);
@@ -373,6 +372,7 @@ void renderCaveNormal() {
 				}
 
 				glColor3fv(caveDepthColour);
+				//Left Depth face.
 				if (i - 1 >= 0 && currentCave[i-1][j] == Free) {
 					glBegin(GL_QUAD_STRIP);
 					glNormal3f(-1.0f, 0.0f, 0.0f);
@@ -382,6 +382,7 @@ void renderCaveNormal() {
 					glVertex3f(-0.5f, 0.5f, depth);
 					glEnd();
 				}
+				//Right Depth face.
 				if (i + 1 < caveWidth && currentCave[i+1][j] == Free) {
 					glBegin(GL_QUAD_STRIP);
 					glNormal3f(1.0f, 0.0f, 0.0f);
@@ -391,6 +392,7 @@ void renderCaveNormal() {
 					glVertex3f(0.5f, 0.5f, depth);
 					glEnd();
 				}
+				//Bottom Depth face.
 				if (j - 1 >= 0 && currentCave[i][j-1] == Free) {
 					glBegin(GL_QUAD_STRIP);
 					glNormal3f(0.0f, -1.0f, 0.0f);
@@ -400,6 +402,7 @@ void renderCaveNormal() {
 					glVertex3f(0.5f, -0.5f, depth);
 					glEnd();
 				}
+				//Top Depth face.
 				if (j + 1 < caveHeight && currentCave[i][j+1] == Free) {
 					glBegin(GL_QUAD_STRIP);
 					glNormal3f(0.0f, 1.0f, 0.0f);
@@ -418,10 +421,6 @@ void renderCaveNormal() {
 
 //Draws the cave structure, uses the marching squares algorithm to smooth edges.
 void renderCaveSmooth() {
-
-	//Colours.
-	float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
-	float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
 
 	//Normals.
 	const float nl[3] = {-1.0f, 0.0f, 0.0f};
