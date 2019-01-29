@@ -120,6 +120,7 @@ void Drone::sense() {
       }
       else {
         occupiedCells.push_back(*dest);
+        checkCells.push_back(*dest);
       }
       continue;
     }
@@ -127,7 +128,10 @@ void Drone::sense() {
     bool collisionDetected = false;
 
     //Obstacle in line of sight between drone position and destination cell check.
-    for (vector<SenseCell>::iterator occupyCheck = occupiedCells.begin(); occupyCheck != occupiedCells.end(); ++occupyCheck) {
+    for (vector<SenseCell>::iterator occupyCheck = checkCells.begin(); occupyCheck != checkCells.end(); ++occupyCheck) {
+      //Ignore if the cell to check is free.
+      if (cave[occupyCheck->x][occupyCheck->y] == Free) { continue; }
+
       float tx0 = (occupyCheck->x - 0.5f - posX) / (dest->x - posX);
       float tx1 = (occupyCheck->x + 0.5f - posX) / (dest->x - posX);
       float ty0 = (occupyCheck->y - 0.5f - posY) / (dest->y - posY);
@@ -151,8 +155,6 @@ void Drone::sense() {
           break;
         }
       }
-
-
       if (ty0 >= 0 && ty0 <= 1) {
         float xCheck = posX + ty0 * (dest->x - posX);
         if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
@@ -171,7 +173,6 @@ void Drone::sense() {
           break;
         }
       }
-
     }
 
     //If no collision detected then the destination cell is in line of sight from the drone's position.
@@ -181,7 +182,11 @@ void Drone::sense() {
       }
       else {
         occupiedCells.push_back(*dest);
+        checkCells.push_back(*dest);
       }
+    }
+    else {
+      checkCells.push_back(*dest);
     }
 
   }
@@ -197,25 +202,6 @@ void Drone::sense() {
     cout << "(" << it->x << "," << it->y << ") ";
   }
   cout << endl;
-
-  //if range <= 1 no collisions to detect.
-  //if free, remove from v add to freecell list.
-  //if occupied, remove from v check collisions, if no collisions add to occupiedlist.
-
-
-  /*//###
-  float dx = float(i) - x;
-  float dy = float(j) - y;
-  //edge cases for dx = 0 or dy = 0;
-  x = x + t * dx;
-  y = y + t * dy;
-  for each cell to check;
-  cx; cy;
-  tx0 = (cx - 0.5f - x) / dx;
-  tx1 = (cx + 0.5f - x) / dx;
-  ty0 = (cy - 0.5f - y) / dy;
-  ty1 = (cy + 0.5f - y) / dy;*/
-  //if any t values are between 0 and 1 inclusive then cell.*/
 
 }
 
