@@ -9,7 +9,7 @@ using namespace std;
 
 static constexpr float maxVelocity = 0.25f;
 static constexpr float acceleration = 0.1f;
-static constexpr float searchRange = 5.0f; //Range of localised search.
+static constexpr float searchRange = 4.0f; //### //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
@@ -58,12 +58,30 @@ void Drone::setPosition(int _x, int _y) {
   posY = _y;
 }
 
+int getIntersection(float dist1, float dist2, float p1x, float p1y, float p2x, float p2y) {
+  if (dist1 * dist2 >= 0.0f) {
+    return 0;
+  }
+  else if (dist1 == dist2) {
+    return 0;
+  }
+  else {
+    return 1;
+  }
+}
+
+int inBox(float b1x, float b1y, float b2x, float b2y, int axis) {
+
+}
+
+
 //Models the sensing of the immediate local environment.
 void Drone::sense() {
 
   vector<SenseCell> candidates; //List of candidate cells.
   vector<SenseCell> freeCells; //List of found free cells.
   vector<SenseCell> occupiedCells; //List of found occupied cells.
+  vector<SenseCell> checkCells; //List of cells to check.
 
   //For each cell in the bounding box of the search range.
   for (int i = floor(posX - searchRange); i <= ceil(posX + searchRange); i++) {
@@ -110,19 +128,53 @@ void Drone::sense() {
 
     //Obstacle in line of sight between drone position and destination cell check.
     for (vector<SenseCell>::iterator occupyCheck = occupiedCells.begin(); occupyCheck != occupiedCells.end(); ++occupyCheck) {
-      float dtx0 = (occupyCheck->x - 0.5f - x) / (dest->x - x);
-      float dtx1 = (occupyCheck->x + 0.5f - x) / (dest->x - x);
-      float dty0 = (occupyCheck->y - 0.5f - y) / (dest->y - y);
-      float dty1 = (occupyCheck->y + 0.5f - y) / (dest->y - y);
+      float tx0 = (occupyCheck->x - 0.5f - posX) / (dest->x - posX);
+      float tx1 = (occupyCheck->x + 0.5f - posX) / (dest->x - posX);
+      float ty0 = (occupyCheck->y - 0.5f - posY) / (dest->y - posY);
+      float ty1 = (occupyCheck->y + 0.5f - posY) / (dest->y - posY);
 
-      if ((dtx0 >= 0 && dtx0 <= 1) && (dtx1 >= 0 && dtx1 <= 1) && (dty0 >= 0 && dty0 <= 1) && (dty1 >= 0 && dty1 <= 1)) {
-        cout << "COLLISION at (" << dest->x << "," << dest->y << ")";
-        cout << "[" << dtx0 << "," << dtx1 << "," << dty0 << "," << dty1 << "]" << endl;
-        collisionDetected = true;
-        break;
+      if (tx0 >= 0 && tx0 <= 1) {
+        float yCheck = posY + tx0 * (dest->y - posY);
+        if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
+          collisionDetected = true;
+          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << tx0 << "," << yCheck << "]" << endl;
+          break;
+        }
       }
+      if (tx1 >= 0 && tx1 <= 1) {
+        float yCheck = posY + tx1 * (dest->y - posY);
+        if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
+          collisionDetected = true;
+          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << tx1 << "," << yCheck << "]" << endl;
+          break;
+        }
+      }
+
+
+      if (ty0 >= 0 && ty0 <= 1) {
+        float xCheck = posX + ty0 * (dest->x - posX);
+        if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
+          collisionDetected = true;
+          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << ty0 << "," << xCheck << "]" << endl;
+          break;
+        }
+      }
+      if (ty1 >= 0 && ty0 <= 1) {
+        float xCheck = posX + ty1 * (dest->x - posX);
+        if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
+          collisionDetected = true;
+          cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
+          cout << "[" << ty1 << "," << xCheck << "]" << endl;
+          break;
+        }
+      }
+
     }
 
+    //If no collision detected then the destination cell is in line of sight from the drone's position.
     if (!collisionDetected) {
       if (cave[dest->x][dest->y] == Free) {
         freeCells.push_back(*dest);
