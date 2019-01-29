@@ -12,7 +12,6 @@ using namespace std;
 enum MapCell { Free, Occupied, Unknown, Frontier }; //###
 
 
-
 static constexpr float maxVelocity = 0.25f;
 static constexpr float acceleration = 0.1f;
 static constexpr float searchRange = 4.0f; //### //Range of localised search.
@@ -23,6 +22,8 @@ static vector<vector<int>> cave;
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float orientation; //Orientation: 0 -> Facing North.
+vector<SenseCell> freeCellBuffer; //List of free cells sensed from the last sense operation.
+vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the last sense operation.
 
 //###int internalMap[caveWidth][caveHeight]; //Known contents of the cave. Start all unknown.
 //###List frontierCells; //Free cells that are adjacent to unknowns.
@@ -160,6 +161,10 @@ void Drone::sense() {
 
   }
 
+  //Sets the cell buffers to the sensed cells.
+  freeCellBuffer = freeCells;
+  occupiedCellBuffer = occupiedCellBuffer;
+
   /*###cout << "FREE CELLS" << endl;
   for (vector<SenseCell>::iterator it = freeCells.begin(); it != freeCells.end(); ++it) {
     cout << "(" << it->x << "," << it->y << ") ";
@@ -171,19 +176,16 @@ void Drone::sense() {
     cout << "(" << it->x << "," << it->y << ") ";
   }
   cout << endl;*/
-
-
-
 }
 
+void Drone::updateInternalMap() {
+  //for each in free and occupied.
+  //if unknown update accordingly.
+}
 
-
-
-
-
-
-
-
+void Drone::findFrontierCells() {
+  
+}
 
 
 
