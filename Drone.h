@@ -16,8 +16,8 @@ public:
   static float searchRange;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
-  void init();
-  void setPosition(int _x, int _y);
+  void init(int x, int y);
+  void setPosition(int x, int y);
   void sense();
 private:
   //Member functions.

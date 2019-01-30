@@ -330,8 +330,7 @@ void generateCave() {
 	}
 
 	Drone::setParams(caveWidth, caveHeight, caveVector);
-	droneA.setPosition(startCell.x, startCell.y);
-	droneA.init();
+	droneA.init(startCell.x, startCell.y);
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -752,7 +751,6 @@ void renderDrone() {
 	Draw::drawDrone(droneA.posX, droneA.posY, depth, Drone::searchRange);
 }
 
-
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
@@ -776,11 +774,9 @@ void display() {
 	setLight(globalLight);
 
 	//###DEBUG.
-	cout << " + Camera Pan: (" << cameraPanX << ":" << cameraPanY << ")" << endl;
-	cout << " + FOV: " << cameraFOV << endl;
-	cout << " + Seed: " << noiseOffsetX << ":" << noiseOffsetY << " ~ Scale: " << noiseScale << endl;
-	cout << " + Fill Percentage: " << fillPercentage << "%" << endl;
-	cout << "[===================================================]" << endl;
+	cout << " + [Camera] - Pan: (" << cameraPanX << ":" << cameraPanY << ")" << " - FOV: " << cameraFOV << endl;
+	cout << " + [Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
+	cout << "[=========================================================]" << endl;
 
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
@@ -848,12 +844,10 @@ void keyboardInput(unsigned char key, int, int) {
 		//###Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
 		//###Drone controls.
-		case '4': droneA.setPosition(droneA.posX - 1.0f, droneA.posY); break;
-		case '6': droneA.setPosition(droneA.posX + 1.0f, droneA.posY); break;
-		case '8': droneA.setPosition(droneA.posX, droneA.posY + 1.0f); break;
-		case '2': droneA.setPosition(droneA.posX, droneA.posY - 1.0f); break;
-
-
+		case '4': droneA.setPosition(droneA.posX - 1.0f, droneA.posY); droneA.sense();break;
+		case '6': droneA.setPosition(droneA.posX + 1.0f, droneA.posY); droneA.sense();break;
+		case '8': droneA.setPosition(droneA.posX, droneA.posY + 1.0f); droneA.sense();break;
+		case '5': droneA.setPosition(droneA.posX, droneA.posY - 1.0f); droneA.sense();break;
 	}
 	glutPostRedisplay();
 }
