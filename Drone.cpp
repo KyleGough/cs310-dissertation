@@ -243,17 +243,9 @@ void Drone::findFrontierCells() {
   cout << "Find Frontier Cells." << endl;
   for (int i = 0; i < caveWidth; i++) {
     for (int j = 0; j < caveHeight; j++) {
+      //for each frontier neighbour of cell in both buffers.
+      //plus cell itself.
 
-      QuadNode *a = quadCave.search(Point(i,j));
-      if (a != nullptr) {
-        cout << a->pos.x << " " << a->pos.y << " " << a->data << endl;
-      }
-
-      /*QuadNode *f = quadCave.search(Point(i,j));
-
-      if (f != NULL) {
-        cout << "Found: (" << f->pos.x << "," << f->pos.y << ")" << " " << quadCave.search(Point(i,j))->data << endl;
-      }*/
     }
   }
 
