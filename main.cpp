@@ -48,7 +48,7 @@ Cell startCell = Cell(0,0);
 float cameraPanX = 125.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
-bool caveSmooth = true;
+bool caveSmooth = true; //Determines if smoothing is enabled when rendering the cave.
 
 //Drone.
 Drone droneA;
@@ -319,7 +319,7 @@ void generateCave() {
 	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
 	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
 
-	//###
+	//Converts the 2D array version of the cave into a vector of vector of ints.
 	vector<vector<int>> caveVector;
 	for (int i = 0; i < caveWidth; i++) {
 		vector<int> caveColumn;
@@ -331,6 +331,7 @@ void generateCave() {
 
 	Drone::setParams(caveWidth, caveHeight, caveVector);
 	droneA.setPosition(startCell.x, startCell.y);
+	droneA.init();
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -748,7 +749,7 @@ void renderCaveSmooth() {
 //###
 void renderDrone() {
 	//Draws a drone at the starting location. //###
-	Draw::drawDrone((float)startCell.x, (float)startCell.y, depth, 5.0f);
+	Draw::drawDrone(droneA.posX, droneA.posY, depth, Drone::searchRange);
 }
 
 
@@ -789,6 +790,12 @@ void display() {
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
 	renderDrone();
+
+	//###
+	float freeColour[3] = {0.0f, 1.0f, 0.0f};
+	float occupyColour[3] = {1.0f, 0.0f, 0.0f};
+	Draw::drawSenseCells(droneA.freeCellBuffer, freeColour, depth + 0.1f);
+	Draw::drawSenseCells(droneA.occupiedCellBuffer, occupyColour, 0.1f);
 
 	glPopMatrix();
 	displayControls();
@@ -840,6 +847,13 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'p': droneA.sense(); break;
 		//###Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
+		//###Drone controls.
+		case '4': droneA.setPosition(droneA.posX - 1.0f, droneA.posY); break;
+		case '6': droneA.setPosition(droneA.posX + 1.0f, droneA.posY); break;
+		case '8': droneA.setPosition(droneA.posX, droneA.posY + 1.0f); break;
+		case '2': droneA.setPosition(droneA.posX, droneA.posY - 1.0f); break;
+
+
 	}
 	glutPostRedisplay();
 }

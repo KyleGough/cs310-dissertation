@@ -2,7 +2,9 @@
 #include <GL/glut.h>
 #include <string.h>
 #include <cmath>
+#include <vector>
 #include "Draw.h"
+using namespace std;
 
 //Draw Background.
 void Draw::drawBackground(float depth, float caveWidth, float caveHeight) {
@@ -99,6 +101,7 @@ void Draw::drawDrone(float x, float y, float depth, float searchRange) {
 	glPopMatrix();
 }
 
+//Draws the bounding box of the drone.
 void Draw::drawDroneBoundingBox(float depth) {
 	float boxNeg = -0.49f;
 	float boxPos = 0.49f;
@@ -131,6 +134,7 @@ void Draw::drawDroneBoundingBox(float depth) {
 	glDisable(GL_LINE_SMOOTH);
 }
 
+//Draws a circle indicating the search range of the drone.
 void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 	glColor3f(1.0f, 0.0f, 0.0f);
 	glEnable(GL_LINE_SMOOTH);
@@ -146,4 +150,20 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 
 	glEnd();
 	glDisable(GL_LINE_SMOOTH);
+}
+
+//Draws cave cells in a specific colour to indicate sensed cells.
+void Draw::drawSenseCells(vector<SenseCell> senseCells, float colour[3], float depth) {
+	glColor3fv(colour);
+	for (vector<SenseCell>::iterator cell = senseCells.begin(); cell != senseCells.end(); ++cell) {
+		glPushMatrix();
+		glTranslatef((float)cell->x, (float)cell->y, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glVertex3f(-0.5f, -0.5f, depth);
+		glVertex3f(0.5f, -0.5f, depth);
+		glVertex3f(-0.5f, 0.5f, depth);
+		glVertex3f(0.5f, 0.5f, depth);
+		glEnd();
+		glPopMatrix();
+	}
 }
