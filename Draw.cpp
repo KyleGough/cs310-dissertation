@@ -158,29 +158,44 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 
 	for (int i = 0; i < caveWidth; i++) {
 		for (int j = 0; j < caveHeight; j++) {
-			if (cave[i][j] == Free) {
-				glPushMatrix();
-				glColor3f(0.0f, 1.0f, 0.0f);
-				glTranslatef((float)i, (float)j, 0.0f);
-				glBegin(GL_TRIANGLE_STRIP);
-				glVertex3f(-0.5f, -0.5f, depth + 0.1f);
-				glVertex3f(0.5f, -0.5f, depth + 0.1f);
-				glVertex3f(-0.5f, 0.5f, depth + 0.1f);
-				glVertex3f(0.5f, 0.5f, depth + 0.1f);
-				glEnd();
-				glPopMatrix();
-			}
-			else if (cave[i][j] == Occupied) {
-				glPushMatrix();
-				glColor3f(1.0f, 0.0f, 0.0f);
-				glTranslatef((float)i, (float)j, 0.0f);
-				glBegin(GL_TRIANGLE_STRIP);
-				glVertex3f(-0.5f, -0.5f, 0.1f);
-				glVertex3f(0.5f, -0.5f, 0.1f);
-				glVertex3f(-0.5f, 0.5f, 0.1f);
-				glVertex3f(0.5f, 0.5f, 0.1f);
-				glEnd();
-				glPopMatrix();
+			switch (cave[i][j]) {
+				case Free:
+					glPushMatrix();
+					glColor3f(0.0f, 1.0f, 0.0f);
+					glTranslatef((float)i, (float)j, 0.0f);
+					glBegin(GL_TRIANGLE_STRIP);
+					glVertex3f(-0.5f, -0.5f, depth + 0.1f);
+					glVertex3f(0.5f, -0.5f, depth + 0.1f);
+					glVertex3f(-0.5f, 0.5f, depth + 0.1f);
+					glVertex3f(0.5f, 0.5f, depth + 0.1f);
+					glEnd();
+					glPopMatrix();
+					break;
+				case Occupied:
+					glPushMatrix();
+					glColor3f(1.0f, 0.0f, 0.0f);
+					glTranslatef((float)i, (float)j, 0.0f);
+					glBegin(GL_TRIANGLE_STRIP);
+					glVertex3f(-0.5f, -0.5f, 0.1f);
+					glVertex3f(0.5f, -0.5f, 0.1f);
+					glVertex3f(-0.5f, 0.5f, 0.1f);
+					glVertex3f(0.5f, 0.5f, 0.1f);
+					glEnd();
+					glPopMatrix();
+					break;
+				case Frontier:
+					glPushMatrix();
+					glColor3f(0.0f, 1.0f, 1.0f);
+					glTranslatef((float)i, (float)j, 0.0f);
+					glBegin(GL_TRIANGLE_STRIP);
+					glVertex3f(-0.5f, -0.5f, depth + 0.1f);
+					glVertex3f(0.5f, -0.5f, depth + 0.1f);
+					glVertex3f(-0.5f, 0.5f, depth + 0.1f);
+					glVertex3f(0.5f, 0.5f, depth + 0.1f);
+					glEnd();
+					glPopMatrix();
+					break;
+
 			}
 		}
 	}

@@ -240,6 +240,71 @@ void Drone::updateInternalMap() {
 void Drone::findFrontierCells() {
 
   //###
+  vector<Cell> frontierCheck;
+
+  for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
+    int x = freeCell->x;
+    int y = freeCell->y;
+    if (x - 1 >= 0 && internalMap[x-1][y] == Frontier) {
+      internalMap[x-1][y] = Free;
+      frontierCheck.push_back(Cell(x-1,y));
+    }
+    if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
+      internalMap[x+1][y] = Free;
+      frontierCheck.push_back(Cell(x+1,y));
+    }
+    if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
+      internalMap[x][y-1] = Free;
+      frontierCheck.push_back(Cell(x,y-1));
+    }
+    if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
+      internalMap[x][y+1] = Free;
+      frontierCheck.push_back(Cell(x,y+1));
+    }
+    frontierCheck.push_back(Cell(x,y));
+  }
+
+  for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
+    int x = occupyCell->x;
+    int y = occupyCell->y;
+    if (x - 1 >= 0 && internalMap[x-1][y] == Frontier) {
+      internalMap[x-1][y] = Free;
+      frontierCheck.push_back(Cell(x-1,y));
+    }
+    if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
+      internalMap[x+1][y] = Free;
+      frontierCheck.push_back(Cell(x+1,y));
+    }
+    if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
+      internalMap[x][y-1] = Free;
+      frontierCheck.push_back(Cell(x,y-1));
+    }
+    if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
+      internalMap[x][y+1] = Free;
+      frontierCheck.push_back(Cell(x,y+1));
+    }
+  }
+
+  for (vector<Cell>::iterator frontierCell = frontierCheck.begin(); frontierCell != frontierCheck.end(); ++frontierCell) {
+    int x = frontierCell->x;
+    int y = frontierCell->y;
+    if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
+      internalMap[x][y] = Frontier;
+    }
+    if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
+      internalMap[x][y] = Frontier;
+    }
+    if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
+      internalMap[x][y] = Frontier;
+    }
+    if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
+      internalMap[x][y] = Frontier;
+    }
+
+  }
+
+
+
   cout << "Find Frontier Cells." << endl;
   for (int i = 0; i < caveWidth; i++) {
     for (int j = 0; j < caveHeight; j++) {
