@@ -9,7 +9,7 @@ public:
   static void drawBorder(float depth, float caveWidth, float caveHeight);
   static void drawText(int x, int y, float scale, char* text, float* textColour);
   static void drawDrone(float x, float y, float depth, float searchRange);
-  static void drawSenseCells(vector<SenseCell> senseCells, float colour[3], float depth);
+  static void drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave);
 private:
   static void drawDroneBoundingBox(float depth);
   static void drawDroneSearchingRange(float searchRange, float depth);

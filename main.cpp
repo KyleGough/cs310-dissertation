@@ -16,6 +16,7 @@
 #include "Cell.h" //Cell struct.
 #include "Visuals.h" //Lighting and Materials.
 #include "Drone.h" //Drone object and functions.
+#include "MapCell.h"
 using namespace std;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -24,7 +25,6 @@ using namespace std;
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
-enum MapCell { Free, Occupied, Unknown, Frontier };
 
 //Generation Parameters.
 int fillPercentage = 50; //Percentage of the randomised environment that will be filled.
@@ -790,8 +790,9 @@ void display() {
 	//###
 	float freeColour[3] = {0.0f, 1.0f, 0.0f};
 	float occupyColour[3] = {1.0f, 0.0f, 0.0f};
-	Draw::drawSenseCells(droneA.freeCellBuffer, freeColour, depth + 0.1f);
-	Draw::drawSenseCells(droneA.occupiedCellBuffer, occupyColour, 0.1f);
+	//###Draw::drawSenseCells(droneA.freeCellBuffer, freeColour, depth + 0.1f);
+	//###Draw::drawSenseCells(droneA.occupiedCellBuffer, occupyColour, 0.1f);
+	Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneA.internalMap);
 
 	glPopMatrix();
 	displayControls();

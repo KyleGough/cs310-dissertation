@@ -3,6 +3,7 @@
 #include <string.h>
 #include <cmath>
 #include <vector>
+#include "MapCell.h"
 #include "Draw.h"
 using namespace std;
 
@@ -152,18 +153,38 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 	glDisable(GL_LINE_SMOOTH);
 }
 
-//Draws cave cells in a specific colour to indicate sensed cells.
-void Draw::drawSenseCells(vector<SenseCell> senseCells, float colour[3], float depth) {
-	glColor3fv(colour);
-	for (vector<SenseCell>::iterator cell = senseCells.begin(); cell != senseCells.end(); ++cell) {
-		glPushMatrix();
-		glTranslatef((float)cell->x, (float)cell->y, 0.0f);
-		glBegin(GL_TRIANGLE_STRIP);
-		glVertex3f(-0.5f, -0.5f, depth);
-		glVertex3f(0.5f, -0.5f, depth);
-		glVertex3f(-0.5f, 0.5f, depth);
-		glVertex3f(0.5f, 0.5f, depth);
-		glEnd();
-		glPopMatrix();
+//Draws discovered cave cells in a specific colour to indicate type.
+void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave) {
+
+	for (int i = 0; i < caveWidth; i++) {
+		for (int j = 0; j < caveHeight; j++) {
+			if (cave[i][j] == Free) {
+				glPushMatrix();
+				glColor3f(0.0f, 1.0f, 0.0f);
+				glTranslatef((float)i, (float)j, 0.0f);
+				glBegin(GL_TRIANGLE_STRIP);
+				glVertex3f(-0.5f, -0.5f, depth + 0.1f);
+				glVertex3f(0.5f, -0.5f, depth + 0.1f);
+				glVertex3f(-0.5f, 0.5f, depth + 0.1f);
+				glVertex3f(0.5f, 0.5f, depth + 0.1f);
+				glEnd();
+				glPopMatrix();
+			}
+			else if (cave[i][j] == Occupied) {
+				glPushMatrix();
+				glColor3f(1.0f, 0.0f, 0.0f);
+				glTranslatef((float)i, (float)j, 0.0f);
+				glBegin(GL_TRIANGLE_STRIP);
+				glVertex3f(-0.5f, -0.5f, 0.1f);
+				glVertex3f(0.5f, -0.5f, 0.1f);
+				glVertex3f(-0.5f, 0.5f, 0.1f);
+				glVertex3f(0.5f, 0.5f, 0.1f);
+				glEnd();
+				glPopMatrix();
+			}
+		}
 	}
+
+
+
 }

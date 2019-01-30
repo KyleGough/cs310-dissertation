@@ -13,6 +13,7 @@ public:
   vector<SenseCell> freeCellBuffer;
   vector<SenseCell> occupiedCellBuffer;
   Quad quadCave;
+  vector<vector<int>> internalMap;
   static float searchRange;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);

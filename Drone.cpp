@@ -6,10 +6,9 @@
 #include <vector>
 #include "Cell.h"
 #include "SenseCell.h"
+#include "MapCell.h"
 #include "Drone.h"
 using namespace std;
-
-enum MapCell { Free, Occupied, Unknown, Frontier }; //###
 
 static constexpr float maxVelocity = 0.25f;
 static constexpr float acceleration = 0.1f;
@@ -24,7 +23,8 @@ float orientation; //Orientation: 0 -> Facing North.
 vector<SenseCell> freeCellBuffer; //List of free cells sensed from the last sense operation.
 vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the last sense operation.
 
-Quad quadCave(); //Known contents of the cave. ###Start all unknown.
+Quad quadCave(); //###Known contents of the cave. ###Start all unknown.
+vector<vector<int>> internalMap;
 vector<SenseCell> frontierCells; //Free cells that are adjacent to unknowns.
 //###List path; //Position and time pairs.
 
@@ -47,6 +47,16 @@ void Drone::init(int x, int y) {
   posY = y;
   quadCave.topLeft = Point(0,0);
   quadCave.botRight = Point(caveWidth, caveHeight);
+
+  internalMap.clear();
+  for (int i = 0; i < caveWidth; i++) {
+    vector<int> column;
+    for (int j = 0; j < caveHeight; j++) {
+      column.push_back(Unknown);
+    }
+    internalMap.push_back(column);
+  }
+
 }
 
 //Sets the drone's current position in the cave.
@@ -188,21 +198,41 @@ void Drone::sense() {
 void Drone::updateInternalMap() {
 
   //Adds all free cells to the internal map.
+  cout << "FREE" << endl; //###
   for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
-    //if (quadCave.search(Point(freeCell->x, freeCell->y)) == NULL) {
+    int x = freeCell->x;
+    int y = freeCell->y;
+    if (internalMap[x][y] == Unknown) {
+      internalMap[x][y] = Free;
+    }
+
+    /*//if (quadCave.search(Point(freeCell->x, freeCell->y)) == NULL) {
+      cout << freeCell->x << "," << freeCell->y << "Map: " << cave[freeCell->x][freeCell->y] << endl;
       int _x = freeCell->x;
       int _y = freeCell->y;
-      QuadNode b(Point(_x, _y), Free);
-      quadCave.insert(&b);
-    //}
+      Point a = Point(_x,_y);
+      QuadNode p = QuadNode(a, 90);
+      quadCave.insert(&p);
+    //}*/
   }
 
+  cout << "OCCUPY" << endl; //###
   //Adds all occupied cells to the internal map.
   for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
-    //if (quadCave.search(Point(occupyCell->x, occupyCell->y)) == NULL) {
-       //QuadNode b(Point(*occupyCell->x, *occupyCell->y), Occupied);
-       //quadCave.insert(&b);
-  //  }
+    int x = occupyCell->x;
+    int y = occupyCell->y;
+    if (internalMap[x][y] == Unknown) {
+      internalMap[x][y] = Occupied;
+    }
+
+    /*//if (quadCave.search(Point(occupyCell->x, occupyCell->y)) == NULL) {
+      cout << occupyCell->x << "," << occupyCell->y << "Map: " << cave[occupyCell->x][occupyCell->y] << endl;
+      int _x = occupyCell->x;
+      int _y = occupyCell->y;
+      Point a = Point(_x,_y);
+      QuadNode v = QuadNode(a,69);
+      quadCave.insert(&v);
+  //  }*/
   }
 
 }
@@ -215,8 +245,8 @@ void Drone::findFrontierCells() {
     for (int j = 0; j < caveHeight; j++) {
 
       QuadNode *a = quadCave.search(Point(i,j));
-      if (a != NULL) {
-        cout << i << " " << j << " " << a->data << endl;
+      if (a != nullptr) {
+        cout << a->pos.x << " " << a->pos.y << " " << a->data << endl;
       }
 
       /*QuadNode *f = quadCave.search(Point(i,j));
