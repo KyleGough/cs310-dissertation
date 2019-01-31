@@ -10,9 +10,15 @@
 #include "Drone.h"
 using namespace std;
 
+//TODO ##
+//Small glitch where a frontier cell wont change to a free cell.
+//Frontier cell had an occupied cell to the left of it.
+
+
+
 static constexpr float maxVelocity = 0.25f;
 static constexpr float acceleration = 0.1f;
-float Drone::searchRange = 6.0f; //### //Range of localised search.
+float Drone::searchRange = 10.0f; //### //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
@@ -48,9 +54,11 @@ void Drone::init(float x, float y, string _name) {
   posX = x;
   posY = y;
   name = _name;
-  quadCave.topLeft = Point(0,0);
-  quadCave.botRight = Point(caveWidth, caveHeight);
+  freeCellBuffer.clear();
+  occupiedCellBuffer.clear();
+  frontierCells.clear(); //###
 
+  //Sets the internal map to all unknowns.
   internalMap.clear();
   for (size_t i = 0; i < caveWidth; i++) {
     vector<int> column;
@@ -59,7 +67,6 @@ void Drone::init(float x, float y, string _name) {
     }
     internalMap.push_back(column);
   }
-
 }
 
 //Sets the drone's current position in the cave.
@@ -99,7 +106,7 @@ void Drone::sense() {
   for (vector<SenseCell>::iterator dest = candidates.begin(); dest != candidates.end(); ++dest) {
     //If the cell range is 1 or less then immediately add it to the list.
     if (dest->range <= 1) {
-      if (cave[dest->x][dest->y] == Free) {
+      if (cave[dest->x][dest->y] == Free || cave[dest->x][dest->y] == Frontier) {
         freeCells.push_back(*dest);
       }
       else {
@@ -153,7 +160,7 @@ void Drone::sense() {
 
     //If no collision detected then the destination cell is in line of sight from the drone's position.
     if (!collisionDetected) {
-      if (cave[dest->x][dest->y] == Free) {
+      if (cave[dest->x][dest->y] == Free || cave[dest->x][dest->y] == Frontier) {
         freeCells.push_back(*dest);
       }
       else {
@@ -276,6 +283,9 @@ void Drone::findFrontierCells() {
       continue;
     }
   }
+
+
+  Quad a = Quad(0,0,caveWidth, caveHeight); //###
 
 }
 

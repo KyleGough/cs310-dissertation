@@ -1,1 +1,1 @@
-g++ -o main main.cpp SimplexNoise.cpp Draw.cpp Drone.cpp QuadTree.cpp -I -L/usr/X11R6/lib -lglut -lGL -lGLU -lX11 -lm -lpng -lpthread -std=c++11
+g++ -o main main.cpp SimplexNoise.cpp Draw.cpp Drone.cpp -I -L/usr/X11R6/lib -lglut -lGL -lGLU -lX11 -lm -lpng -lpthread -std=c++11

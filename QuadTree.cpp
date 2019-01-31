@@ -10,74 +10,60 @@ void Quad::insert(QuadNode *node) {
         return;
 
     // Current quad cannot contain it
-    if (!inBoundary(node->pos))
+    if (!inBoundary(node->x, node->y))
         return;
 
     // We are at a quad of unit area
     // We cannot subdivide this quad further
-    if (abs(topLeft.x - botRight.x) <= 1 &&
-        abs(topLeft.y - botRight.y) <= 1)
+    if (abs(left - right) <= 1 &&
+        abs(top - bot) <= 1)
     {
         if (n == nullptr)
             n = node;
         return;
     }
 
-    if ((topLeft.x + botRight.x) / 2 >= node->pos.x)
+    if ((left + right) / 2 >= node->x)
     {
         // Indicates topLeftTree
-        if ((topLeft.y + botRight.y) / 2 >= node->pos.y)
+        if ((top + bot) / 2 >= node->y)
         {
             if (topLeftTree == nullptr)
-                topLeftTree = new Quad(
-                    Point(topLeft.x, topLeft.y),
-                    Point((topLeft.x + botRight.x) / 2,
-                        (topLeft.y + botRight.y) / 2));
-            topLeftTree->insert(node);
+                topLeftTree = new Quad(left, top, (left + right) / 2, (top + bot) / 2);
+            topLeftTree->insert(node->x, node->y);
         }
 
         // Indicates botLeftTree
         else
         {
             if (botLeftTree == nullptr)
-                botLeftTree = new Quad(
-                    Point(topLeft.x,
-                        (topLeft.y + botRight.y) / 2),
-                    Point((topLeft.x + botRight.x) / 2,
-                        botRight.y));
-            botLeftTree->insert(node);
+                botLeftTree = new Quad(left, (top + bot) / 2, (left + right) / 2, bot);
+            botLeftTree->insert(node->x, node->y);
         }
     }
     else
     {
         // Indicates topRightTree
-        if ((topLeft.y + botRight.y) / 2 >= node->pos.y)
+        if ((top + bot) / 2 >= node->y)
         {
             if (topRightTree == nullptr)
-                topRightTree = new Quad(
-                    Point((topLeft.x + botRight.x) / 2,
-                        topLeft.y),
-                    Point(botRight.x,
-                        (topLeft.y + botRight.y) / 2));
-            topRightTree->insert(node);
+                topRightTree = new Quad((left + right) / 2, top, right, (top + bot) / 2);
+            topRightTree->insert(node->x, node->y);
         }
 
         // Indicates botRightTree
         else
         {
             if (botRightTree == nullptr)
-                botRightTree = new Quad(
-                    Point((topLeft.x + botRight.x) / 2,
-                        (topLeft.y + botRight.y) / 2),
-                    Point(botRight.x, botRight.y));
-            botRightTree->insert(node);
+                botRightTree = new Quad((left + right) / 2, (top + bot) / 2, right, bot);
+            botRightTree->insert(node->x, node->y);
         }
     }
 }
 
-QuadNode* Quad::search(Point p) {
+QuadNode* Quad::search(int x, int y) {
     // Current quad cannot contain it
-    if (!inBoundary(p))
+    if (!inBoundary(x,y))
         return nullptr;
 
     // We are at a quad of unit length
@@ -85,10 +71,10 @@ QuadNode* Quad::search(Point p) {
     if (n != nullptr)
         return n;
 
-    if ((topLeft.x + botRight.x) / 2 >= p.x)
+    if ((left + right) / 2 >= x)
     {
         // Indicates topLeftTree
-        if ((topLeft.y + botRight.y) / 2 >= p.y)
+        if ((top + bot) / 2 >= y)
         {
             if (topLeftTree == nullptr)
                 return nullptr;
@@ -106,7 +92,7 @@ QuadNode* Quad::search(Point p) {
     else
     {
         // Indicates topRightTree
-        if ((topLeft.y + botRight.y) / 2 >= p.y)
+        if ((top + bot) / 2 >= y)
         {
             if (topRightTree == nullptr)
                 return nullptr;
@@ -123,9 +109,9 @@ QuadNode* Quad::search(Point p) {
     }
 };
 
-bool Quad::inBoundary(Point p) {
-  return (p.x >= topLeft.x &&
-      p.x <= botRight.x &&
-      p.y >= topLeft.y &&
-      p.y <= botRight.y);
+bool Quad::inBoundary(int x, int y) {
+  return (x >= left &&
+      x <= right &&
+      y >= top &&
+      y <= bot);
 }
