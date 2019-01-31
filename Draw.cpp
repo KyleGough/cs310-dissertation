@@ -142,7 +142,7 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 	glBegin(GL_LINE_LOOP);
 
 	int segments = 32;
-	for (int i = 0; i < segments; i++) {
+	for (size_t i = 0; i < segments; i++) {
 		float angle = 2.0f * M_PI * float(i) / float(segments);
 		float x = searchRange * cos(angle);
 		float y = searchRange * sin(angle);
@@ -156,8 +156,8 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 //Draws discovered cave cells in a specific colour to indicate type.
 void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave) {
 
-	for (int i = 0; i < caveWidth; i++) {
-		for (int j = 0; j < caveHeight; j++) {
+	for (size_t i = 0; i < caveWidth; i++) {
+		for (size_t j = 0; j < caveHeight; j++) {
 			switch (cave[i][j]) {
 				case Free:
 					glPushMatrix();

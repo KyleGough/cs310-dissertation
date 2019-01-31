@@ -62,8 +62,8 @@ bool thresholdRandom(int chance) {
 
 int getNeighbourCount(int x, int y) {
 	int count = 0;
-	for (int i = x - 1; i <= x + 1; i++) {
-		for (int j = y - 1; j <= y + 1; j++) {
+	for (size_t i = x - 1; i <= x + 1; i++) {
+		for (size_t j = y - 1; j <= y + 1; j++) {
 			if (!(i == x && j == y) && currentCave[i][j] == Free) {
 				count++;
 			}
@@ -74,9 +74,9 @@ int getNeighbourCount(int x, int y) {
 
 //Performs one pass of a given ruleset of cellular automata to smooth the cave.
 void smoothCave(int iterations) {
-	for (int i = 0; i < iterations; i++) { //Smooth iterations.
-		for (int y = border; y < caveHeight - border; y++) { //For each row.
-			for (int x = border; x < caveWidth - border; x++) { //For each column.
+	for (size_t i = 0; i < iterations; i++) { //Smooth iterations.
+		for (size_t y = border; y < caveHeight - border; y++) { //For each row.
+			for (size_t x = border; x < caveWidth - border; x++) { //For each column.
 				int neighbours = getNeighbourCount(x, y);
 				if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
 					tempCave[x][y] = Free; //Cell is born.
@@ -102,8 +102,8 @@ void randomiseCave() {
 	noiseOffsetY = rand() % 100000;
 
 	//Iterates through each cell in the cave.
-	for (int y = 0; y < caveHeight; y++) { //For each column in the cave.
-		for (int x = 0; x < caveWidth; x++) { //For each row in the cave.
+	for (size_t y = 0; y < caveHeight; y++) { //For each column in the cave.
+		for (size_t x = 0; x < caveWidth; x++) { //For each row in the cave.
 			 //Cave border.
 			 if (x < border || x > caveWidth - border - 1 || y < border || y > caveHeight - border - 1) {
 				currentCave[x][y] = Occupied;
@@ -231,8 +231,8 @@ Cell findStartCell() {
 	int max = 0;
 
 	//Iterates over all cells in the cave.
-	for (int x = border; x < caveWidth - border; x++) {
-		for (int y = border; y < caveHeight - border; y++) {
+	for (size_t x = border; x < caveWidth - border; x++) {
+		for (size_t y = border; y < caveHeight - border; y++) {
 			//Uses flood fill to see how many cells occupy the same free space.
 			int count = floodFillCount(x,y,Occupied);
 			if (count > max) {
@@ -250,8 +250,8 @@ Cell findStartCell() {
 void fillInaccessibleAreas(Cell startCell) {
 
 	//Sets the temporary cave to be fully occupied.
-  for (int i = 0; i < caveWidth; i++) {
-		for (int j = 0; j < caveHeight; j++) {
+  for (size_t i = 0; i < caveWidth; i++) {
+		for (size_t j = 0; j < caveHeight; j++) {
 			tempCave[i][j] = Occupied;
 		}
 	}
@@ -266,8 +266,8 @@ void fillInaccessibleAreas(Cell startCell) {
 void removeNonBorderOccupiedAreas() {
 
 	//Sets the temporary cave to be fully occupied.
-  for (int i = 0; i < caveWidth; i++) {
-		for (int j = 0; j < caveHeight; j++) {
+  for (size_t i = 0; i < caveWidth; i++) {
+		for (size_t j = 0; j < caveHeight; j++) {
 			tempCave[i][j] = Free;
 		}
 	}
@@ -275,33 +275,33 @@ void removeNonBorderOccupiedAreas() {
 	//Iterates over cells in the cave border.
 	//Uses flood fill to find all occupied cells connected to a given border cell
 	//and dismisses occupied cells not connected to a border cell.
-	for (int y = border; y < caveHeight - border; y++) {
+	for (size_t y = border; y < caveHeight - border; y++) {
 		floodFillReplace(border - 1, y, Occupied, Free, Occupied);
 		floodFillReplace(caveWidth - border, y, Occupied, Free, Occupied);
 	}
-	for (int x = border; x < caveWidth - border; x++) {
+	for (size_t x = border; x < caveWidth - border; x++) {
 		floodFillReplace(x, border - 1, Occupied, Free, Occupied);
 		floodFillReplace(x, caveHeight - border, Occupied, Free, Occupied);
 	}
 
 	//Re-adds the borders into the cave.
-	for (int y = 0; y < caveHeight; y++) {
+	for (size_t y = 0; y < caveHeight; y++) {
 		//Left Border.
-		for (int x = 0; x < border; x++) {
+		for (size_t x = 0; x < border; x++) {
 			tempCave[x][y] = Occupied;
 		}
 		//Right Border.
-		for (int x = caveWidth - border; x < caveWidth; x++) {
+		for (size_t x = caveWidth - border; x < caveWidth; x++) {
 			tempCave[x][y] = Occupied;
 		}
 	}
-	for (int x = border; x < caveWidth - border; x++) {
+	for (size_t x = border; x < caveWidth - border; x++) {
 		//Bottom Border.
-		for (int y = 0; y < border; y++) {
+		for (size_t y = 0; y < border; y++) {
 			tempCave[x][y] = Occupied;
 		}
 		//Top Border.
-		for (int y = caveHeight - border; y < caveHeight; y++) {
+		for (size_t y = caveHeight - border; y < caveHeight; y++) {
 			tempCave[x][y] = Occupied;
 		}
 	}
@@ -321,9 +321,9 @@ void generateCave() {
 
 	//Converts the 2D array version of the cave into a vector of vector of ints.
 	vector<vector<int>> caveVector;
-	for (int i = 0; i < caveWidth; i++) {
+	for (size_t i = 0; i < caveWidth; i++) {
 		vector<int> caveColumn;
-		for (int j = 0; j < caveHeight; j++) {
+		for (size_t j = 0; j < caveHeight; j++) {
 			caveColumn.push_back(currentCave[i][j]);
 		}
 		caveVector.push_back(caveColumn);
@@ -352,8 +352,8 @@ void displayControls() {
 void renderCaveNormal() {
 
 	//For each cell in the cave.
-	for (int i = 0; i < caveWidth; i++) {
-		for (int j = 0; j < caveHeight; j++) {
+	for (size_t i = 0; i < caveWidth; i++) {
+		for (size_t j = 0; j < caveHeight; j++) {
 			if (currentCave[i][j] == Occupied) {
 				glPushMatrix();
 				//Translate to cell position.
@@ -460,8 +460,8 @@ void renderCaveSmooth() {
 	glTranslatef(0.5f, 0.5f, 0.0f);
 
 	//Iterates over each 2x2 block of cells in the cave.
-	for (int i = 0; i < caveWidth - 1; i++) {
-		for (int j = 0; j < caveHeight - 1; j++) {
+	for (size_t i = 0; i < caveWidth - 1; i++) {
+		for (size_t j = 0; j < caveHeight - 1; j++) {
 			glPushMatrix();
 			//Translate to cell position.
 			glTranslatef((float)i, (float)j, 0);

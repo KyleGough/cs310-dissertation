@@ -36,13 +36,14 @@ bool operator <(const SenseCell& a, const SenseCell& b) {
 }
 
 
-//Sets global cave properties.
+//Sets static cave properties.
 void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave) {
   caveWidth = _caveWidth;
   caveHeight = _caveHeight;
   cave = _cave;
 }
 
+//Initalises the drone's starting position, name and internal map.
 void Drone::init(float x, float y, string _name) {
   posX = x;
   posY = y;
@@ -51,9 +52,9 @@ void Drone::init(float x, float y, string _name) {
   quadCave.botRight = Point(caveWidth, caveHeight);
 
   internalMap.clear();
-  for (int i = 0; i < caveWidth; i++) {
+  for (size_t i = 0; i < caveWidth; i++) {
     vector<int> column;
-    for (int j = 0; j < caveHeight; j++) {
+    for (size_t j = 0; j < caveHeight; j++) {
       column.push_back(Unknown);
     }
     internalMap.push_back(column);
@@ -78,8 +79,8 @@ void Drone::sense() {
   vector<SenseCell> checkCells; //List of cells to check.
 
   //For each cell in the bounding box of the search range.
-  for (int i = floor(posX - searchRange); i <= ceil(posX + searchRange); i++) {
-    for (int j = floor(posY - searchRange); j <= ceil(posY + searchRange); j++) {
+  for (size_t i = floor(posX - searchRange); i <= ceil(posX + searchRange); i++) {
+    for (size_t j = floor(posY - searchRange); j <= ceil(posY + searchRange); j++) {
       //Discard Out-of-bounds cells.
       if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) { continue; }
       //Allows only cells in the range.
@@ -256,50 +257,44 @@ void Drone::findFrontierCells() {
     int y = frontierCell->y;
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y));
+      frontierCells.push_back(Cell(x,y)); //###
       continue;
     }
     if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y));
+      frontierCells.push_back(Cell(x,y)); //###
       continue;
     }
     if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y));
+      frontierCells.push_back(Cell(x,y)); //###
       continue;
     }
     if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y));
+      frontierCells.push_back(Cell(x,y)); //###
       continue;
     }
   }
 
 }
 
-
+//Finds the best frontier cell to navigate to.
 Cell Drone::getBestFrontier() {
 
-}
 
+
+
+
+
+}
 
 
 //If drone-to-drone collision avoidance becomes too tough.
 //Allow them to pass through each other, saying they take different altitudes.
 
-
-//(1)
-//Search local area. DONE
-
-//(2)
-//Place sensed data into internal map. DONE
-
-//(3)
-//Compute frontier cells. DONE
-
-//(4)
-//Find optimal frontier cell.
-
-//(5)
-//Plan path to frontier cell.
+//(1) Search local area. DONE
+//(2) Place sensed data into internal map. DONE
+//(3) Compute frontier cells. DONE
+//(4) Find optimal frontier cell.
+//(5) Plan path to frontier cell.
