@@ -330,7 +330,7 @@ void generateCave() {
 	}
 
 	Drone::setParams(caveWidth, caveHeight, caveVector);
-	droneA.init(startCell.x, startCell.y);
+	droneA.init(startCell.x, startCell.y, "Drone A");
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -790,8 +790,6 @@ void display() {
 	//###
 	float freeColour[3] = {0.0f, 1.0f, 0.0f};
 	float occupyColour[3] = {1.0f, 0.0f, 0.0f};
-	//###Draw::drawSenseCells(droneA.freeCellBuffer, freeColour, depth + 0.1f);
-	//###Draw::drawSenseCells(droneA.occupiedCellBuffer, occupyColour, 0.1f);
 	Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneA.internalMap);
 
 	glPopMatrix();
@@ -845,10 +843,10 @@ void keyboardInput(unsigned char key, int, int) {
 		//###Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
 		//###Drone controls.
-		case '4': droneA.setPosition(droneA.posX - 1.0f, droneA.posY); droneA.sense();break;
-		case '6': droneA.setPosition(droneA.posX + 1.0f, droneA.posY); droneA.sense();break;
-		case '8': droneA.setPosition(droneA.posX, droneA.posY + 1.0f); droneA.sense();break;
-		case '5': droneA.setPosition(droneA.posX, droneA.posY - 1.0f); droneA.sense();break;
+		case '4': droneA.setPosition(droneA.posX - 0.5f, droneA.posY); droneA.sense();break;
+		case '6': droneA.setPosition(droneA.posX + 0.5f, droneA.posY); droneA.sense();break;
+		case '8': droneA.setPosition(droneA.posX, droneA.posY + 0.5f); droneA.sense();break;
+		case '5': droneA.setPosition(droneA.posX, droneA.posY - 0.5f); droneA.sense();break;
 	}
 	glutPostRedisplay();
 }

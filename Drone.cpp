@@ -17,6 +17,7 @@ static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
 
+string name; //Name of the drone. //###
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float orientation; //Orientation: 0 -> Facing North.
@@ -25,7 +26,7 @@ vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the l
 
 Quad quadCave(); //###Known contents of the cave. ###Start all unknown.
 vector<vector<int>> internalMap;
-vector<SenseCell> frontierCells; //Free cells that are adjacent to unknowns.
+vector<Cell> frontierCells; //Free cells that are adjacent to unknowns.
 //###List path; //Position and time pairs.
 
 
@@ -42,9 +43,10 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
   cave = _cave;
 }
 
-void Drone::init(int x, int y) {
+void Drone::init(float x, float y, string _name) {
   posX = x;
   posY = y;
+  name = _name;
   quadCave.topLeft = Point(0,0);
   quadCave.botRight = Point(caveWidth, caveHeight);
 
@@ -60,9 +62,11 @@ void Drone::init(int x, int y) {
 }
 
 //Sets the drone's current position in the cave.
-void Drone::setPosition(int x, int y) {
+void Drone::setPosition(float x, float y) {
   posX = x;
   posY = y;
+  //###
+  cout << " + [" << name << "]" << " - Pos: (" << posX << "," << posY << ")" << endl;
 }
 
 //Models the sensing of the immediate local environment.
@@ -120,8 +124,6 @@ void Drone::sense() {
         float yCheck = posY + tx0 * (dest->y - posY);
         if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
           collisionDetected = true;
-          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << tx0 << "," << yCheck << "]" << endl;*/
           break;
         }
       }
@@ -129,8 +131,6 @@ void Drone::sense() {
         float yCheck = posY + tx1 * (dest->y - posY);
         if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
           collisionDetected = true;
-          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << tx1 << "," << yCheck << "]" << endl;*/
           break;
         }
       }
@@ -138,8 +138,6 @@ void Drone::sense() {
         float xCheck = posX + ty0 * (dest->x - posX);
         if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
           collisionDetected = true;
-          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << ty0 << "," << xCheck << "]" << endl;*/
           break;
         }
       }
@@ -147,8 +145,6 @@ void Drone::sense() {
         float xCheck = posX + ty1 * (dest->x - posX);
         if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
           collisionDetected = true;
-          /*###cout << "COLLISION at (" << dest->x << "," << dest->y << ") with (" << occupyCheck->x << "," << occupyCheck->y << ")";
-          cout << "[" << ty1 << "," << xCheck << "]" << endl;*/
           break;
         }
       }
@@ -170,25 +166,9 @@ void Drone::sense() {
 
   }
 
-  //Removes contents from the buffers.
-  //freeCellBuffer.clear();
-  //occupiedCellBuffer.clear();
   //Sets the cell buffers to the sensed cells.
   freeCellBuffer = freeCells;
   occupiedCellBuffer = occupiedCells;
-
-  //###
-  cout << "FREE CELLS (" << freeCells.size() << ")" << endl;
-  for (vector<SenseCell>::iterator it = freeCells.begin(); it != freeCells.end(); ++it) {
-    cout << "(" << it->x << "," << it->y << ") ";
-  }
-  cout << endl;
-
-  cout << "OCCUPIED CELLS (" << occupiedCells.size() << ")" << endl;
-  for (vector<SenseCell>::iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it) {
-    cout << "(" << it->x << "," << it->y << ") ";
-  }
-  cout << endl;
 
   updateInternalMap();
   findFrontierCells();
@@ -216,6 +196,7 @@ void Drone::updateInternalMap() {
   }
 }
 
+//Recalculates the set of frontier cells in the internal map.
 void Drone::findFrontierCells() {
 
   //List of cells to check if they are frontier cels.
@@ -269,26 +250,36 @@ void Drone::findFrontierCells() {
     }
   }
 
+  //For each cell to check if it neighbours an unknown cell set it as a Frontier cell and add it to the list of frontiers.
   for (vector<Cell>::iterator frontierCell = frontierCheck.begin(); frontierCell != frontierCheck.end(); ++frontierCell) {
     int x = frontierCell->x;
     int y = frontierCell->y;
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
+      frontierCells.push_back(Cell(x,y));
       continue;
     }
     if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
+      frontierCells.push_back(Cell(x,y));
       continue;
     }
     if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
+      frontierCells.push_back(Cell(x,y));
       continue;
     }
     if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
+      frontierCells.push_back(Cell(x,y));
       continue;
     }
   }
+
+}
+
+
+Cell Drone::getBestFrontier() {
 
 }
 
@@ -299,13 +290,13 @@ void Drone::findFrontierCells() {
 
 
 //(1)
-//Search local area.
+//Search local area. DONE
 
 //(2)
-//Place sensed data into internal map.
+//Place sensed data into internal map. DONE
 
 //(3)
-//Compute frontier cells.
+//Compute frontier cells. DONE
 
 //(4)
 //Find optimal frontier cell.
