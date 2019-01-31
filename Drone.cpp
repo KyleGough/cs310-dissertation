@@ -198,25 +198,14 @@ void Drone::sense() {
 void Drone::updateInternalMap() {
 
   //Adds all free cells to the internal map.
-  cout << "FREE" << endl; //###
   for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
     int x = freeCell->x;
     int y = freeCell->y;
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Free;
     }
-
-    /*//if (quadCave.search(Point(freeCell->x, freeCell->y)) == NULL) {
-      cout << freeCell->x << "," << freeCell->y << "Map: " << cave[freeCell->x][freeCell->y] << endl;
-      int _x = freeCell->x;
-      int _y = freeCell->y;
-      Point a = Point(_x,_y);
-      QuadNode p = QuadNode(a, 90);
-      quadCave.insert(&p);
-    //}*/
   }
 
-  cout << "OCCUPY" << endl; //###
   //Adds all occupied cells to the internal map.
   for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
     int x = occupyCell->x;
@@ -224,27 +213,22 @@ void Drone::updateInternalMap() {
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Occupied;
     }
-
-    /*//if (quadCave.search(Point(occupyCell->x, occupyCell->y)) == NULL) {
-      cout << occupyCell->x << "," << occupyCell->y << "Map: " << cave[occupyCell->x][occupyCell->y] << endl;
-      int _x = occupyCell->x;
-      int _y = occupyCell->y;
-      Point a = Point(_x,_y);
-      QuadNode v = QuadNode(a,69);
-      quadCave.insert(&v);
-  //  }*/
   }
-
 }
 
 void Drone::findFrontierCells() {
 
-  //###
+  //List of cells to check if they are frontier cels.
   vector<Cell> frontierCheck;
 
+  //Iterates through each newly sensed free cell.
+  //If the cell itself or a neighbour is a frontier cell, add it to the check list and set it to free.
   for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
     int x = freeCell->x;
     int y = freeCell->y;
+    if (internalMap[x][y] == Frontier) {
+      internalMap[x][y] = Free; //###???
+    }
     if (x - 1 >= 0 && internalMap[x-1][y] == Frontier) {
       internalMap[x-1][y] = Free;
       frontierCheck.push_back(Cell(x-1,y));
@@ -261,7 +245,7 @@ void Drone::findFrontierCells() {
       internalMap[x][y+1] = Free;
       frontierCheck.push_back(Cell(x,y+1));
     }
-    frontierCheck.push_back(Cell(x,y));
+    frontierCheck.push_back(Cell(x,y)); //###???
   }
 
   for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
@@ -290,27 +274,19 @@ void Drone::findFrontierCells() {
     int y = frontierCell->y;
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
+      continue;
     }
-    if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
+    if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
+      continue;
     }
-    if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
+    if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
+      continue;
     }
-    if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
+    if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-    }
-
-  }
-
-
-
-  cout << "Find Frontier Cells." << endl;
-  for (int i = 0; i < caveWidth; i++) {
-    for (int j = 0; j < caveHeight; j++) {
-      //for each frontier neighbour of cell in both buffers.
-      //plus cell itself.
-
+      continue;
     }
   }
 
