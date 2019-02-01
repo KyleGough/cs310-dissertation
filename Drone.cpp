@@ -32,7 +32,7 @@ vector<vector<int>> internalMap; //###
 map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
 vector<DroneConfig> path; //List of drone configurations for each timestep. //###
 int currentTimestep; //###
-Cell target; //###
+pair<Cell,int> target; //###
 
 
 //Less than comparison function for two SenseCell objects.
@@ -180,7 +180,7 @@ void Drone::sense() {
   //###remove one movement and a* implemented.
   updateInternalMap();
   findFrontierCells();
-  Cell a = getBestFrontier(); //###
+  target = getBestFrontier(); //###
 }
 
 //Updates the internal map of the drone to include recently sensed free and occupied cells.
@@ -301,7 +301,7 @@ void Drone::findFrontierCells() {
 }
 
 //Finds the best frontier cell to navigate to.
-Cell Drone::getBestFrontier() {
+pair<Cell,int> Drone::getBestFrontier() {
 
   float bestDist = numeric_limits<float>::max();
   Cell bestFrontier = Cell(0,0);
@@ -324,22 +324,36 @@ Cell Drone::getBestFrontier() {
   cout << "Timestep: (" << timestep << ")" << endl;
   cout << "Frontier Count: " << frontierCells.size() << endl;
 
-  return bestFrontier;
+  return make_pair(bestFrontier, timestep);
 }
 
 //Adds the drone's current configuration to the path.
 void Drone::recordConfiguration() {
   path.push_back(DroneConfig(currentTimestep, posX, posY, orientation));
-  //###maybe timestep++ here.
+  currentTimestep++;
 }
 
-/*void navigateToTarget() {
+void Drone::navigateToTarget() {
+
+  //If the target frontier cell was sensed in the current timestep.
+  if (target.second == currentTimestep) {
+    cout << "TARGET ON CURRENT TIMESTEP" << endl; //###
+    //Use A* to plot a path.
+  }
+  else {
+    //Backtrack.
+    cout << "BACKTRACK REQUIRED" << endl; //###
+    //A*2
+  }
+
+
   //if same timestep as target, no backtracking, use A* to get the path then navigate to it.
+
 
   //if previous timestep then
   //backtrack
   //once reached target timestep then use a*.
-}*/
+}
 
 
 /*void getTarget() {

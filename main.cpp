@@ -843,10 +843,12 @@ void keyboardInput(unsigned char key, int, int) {
 		//###Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
 		//###Drone controls.
-		case '4': droneA.setPosition(droneA.posX - 0.5f, droneA.posY); droneA.sense();break;
-		case '6': droneA.setPosition(droneA.posX + 0.5f, droneA.posY); droneA.sense();break;
-		case '8': droneA.setPosition(droneA.posX, droneA.posY + 0.5f); droneA.sense();break;
-		case '5': droneA.setPosition(droneA.posX, droneA.posY - 0.5f); droneA.sense();break;
+		case '4': droneA.recordConfiguration(); droneA.setPosition(droneA.posX - 0.5f, droneA.posY); droneA.sense(); break;
+		case '6': droneA.recordConfiguration(); droneA.setPosition(droneA.posX + 0.5f, droneA.posY); droneA.sense(); break;
+		case '8': droneA.recordConfiguration(); droneA.setPosition(droneA.posX, droneA.posY + 0.5f); droneA.sense(); break;
+		case '5': droneA.recordConfiguration(); droneA.setPosition(droneA.posX, droneA.posY - 0.5f); droneA.sense(); break;
+		//###NAVIGATE.
+		case 'u': droneA.navigateToTarget(); break;
 	}
 	glutPostRedisplay();
 }

@@ -21,10 +21,11 @@ public:
   void init(float x, float y, string _name);
   void setPosition(float x,  float y);
   void sense();
+  void recordConfiguration();
+  void navigateToTarget();
 private:
   //Member functions.
   void updateInternalMap();
   void findFrontierCells();
-  Cell getBestFrontier();
-  void recordConfiguration();
+  pair<Cell,int> getBestFrontier();
 };
