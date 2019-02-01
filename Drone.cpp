@@ -4,6 +4,7 @@
 #include <GL/glut.h>
 #include <algorithm>
 #include <vector>
+#include <algorithm>
 #include "Cell.h"
 #include "SenseCell.h"
 #include "MapCell.h"
@@ -13,6 +14,7 @@ using namespace std;
 //TODO ##
 //Small glitch where a frontier cell wont change to a free cell.
 //Frontier cell had an occupied cell to the left of it.
+//Error occurs when search range goes outside of cave dimensions.
 
 
 
@@ -86,10 +88,10 @@ void Drone::sense() {
   vector<SenseCell> checkCells; //List of cells to check.
 
   //For each cell in the bounding box of the search range.
-  for (size_t i = floor(posX - searchRange); i <= ceil(posX + searchRange); i++) {
-    for (size_t j = floor(posY - searchRange); j <= ceil(posY + searchRange); j++) {
+  for (size_t i = max(0, (int)floor(posX - searchRange)); i <= min(caveWidth - 1, (int)ceil(posX + searchRange)); i++) {
+    for (size_t j = max(0, (int)floor(posY - searchRange)); j <= min(caveHeight - 1, (int)ceil(posY + searchRange)); j++) {
       //Discard Out-of-bounds cells.
-      if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) { continue; }
+      //if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) { continue; }
       //Allows only cells in the range.
       float range = pow(pow(posX - (float)i, 2.0) + pow(posY - (float)j, 2.0), 0.5);
       if (range > searchRange) { continue; }
@@ -97,6 +99,8 @@ void Drone::sense() {
       candidates.push_back(SenseCell(i,j,range));
     }
   }
+
+  cout << "(" << floor(posX - searchRange) << "->" << ceil(posX + searchRange) << "," << floor(posY - searchRange) << "->" << ceil(posY + searchRange) << ")" << endl; //###
 
   //Sorts the list of cells by distance to the drone in increasing order.
   sort(candidates.begin(), candidates.end());
