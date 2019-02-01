@@ -26,4 +26,5 @@ private:
   void updateInternalMap();
   void findFrontierCells();
   Cell getBestFrontier();
+  void recordConfiguration();
 };

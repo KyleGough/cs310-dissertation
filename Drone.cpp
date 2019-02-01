@@ -5,17 +5,14 @@
 #include <algorithm>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <limits>
 #include "Cell.h"
 #include "SenseCell.h"
+#include "DroneConfig.h"
 #include "MapCell.h"
 #include "Drone.h"
 using namespace std;
-
-//TODO ##
-//Small glitch where a frontier cell wont change to a free cell.
-//Frontier cell had an occupied cell to the left of it.
-//Error occurs when search range goes outside of cave dimensions.
-
 
 
 static constexpr float maxVelocity = 0.25f;
@@ -31,18 +28,17 @@ float posY; //Current y position in the cave.
 float orientation; //Orientation: 0 -> Facing North.
 vector<SenseCell> freeCellBuffer; //List of free cells sensed from the last sense operation.
 vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the last sense operation.
-
-Quad quadCave(); //###Known contents of the cave. ###Start all unknown.
-vector<vector<int>> internalMap;
-vector<Cell> frontierCells; //Free cells that are adjacent to unknowns.
-//###List path; //Position and time pairs.
+vector<vector<int>> internalMap; //###
+map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
+vector<DroneConfig> path; //List of drone configurations for each timestep. //###
+int currentTimestep; //###
+Cell target; //###
 
 
 //Less than comparison function for two SenseCell objects.
 bool operator <(const SenseCell& a, const SenseCell& b) {
   return a.range < b.range;
 }
-
 
 //Sets static cave properties.
 void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave) {
@@ -55,7 +51,9 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 void Drone::init(float x, float y, string _name) {
   posX = x;
   posY = y;
+  orientation = 0.0f;
   name = _name;
+  currentTimestep = 0;
   freeCellBuffer.clear();
   occupiedCellBuffer.clear();
   frontierCells.clear(); //###
@@ -88,10 +86,9 @@ void Drone::sense() {
   vector<SenseCell> checkCells; //List of cells to check.
 
   //For each cell in the bounding box of the search range.
+  //Discards Out-of-bounds cells (e.g. i = -1).
   for (size_t i = max(0, (int)floor(posX - searchRange)); i <= min(caveWidth - 1, (int)ceil(posX + searchRange)); i++) {
     for (size_t j = max(0, (int)floor(posY - searchRange)); j <= min(caveHeight - 1, (int)ceil(posY + searchRange)); j++) {
-      //Discard Out-of-bounds cells.
-      //if (i < 0 || j < 0 || i >= caveWidth || j >= caveHeight) { continue; }
       //Allows only cells in the range.
       float range = pow(pow(posX - (float)i, 2.0) + pow(posY - (float)j, 2.0), 0.5);
       if (range > searchRange) { continue; }
@@ -99,8 +96,6 @@ void Drone::sense() {
       candidates.push_back(SenseCell(i,j,range));
     }
   }
-
-  cout << "(" << floor(posX - searchRange) << "->" << ceil(posX + searchRange) << "," << floor(posY - searchRange) << "->" << ceil(posY + searchRange) << ")" << endl; //###
 
   //Sorts the list of cells by distance to the drone in increasing order.
   sort(candidates.begin(), candidates.end());
@@ -182,8 +177,10 @@ void Drone::sense() {
   freeCellBuffer = freeCells;
   occupiedCellBuffer = occupiedCells;
 
+  //###remove one movement and a* implemented.
   updateInternalMap();
   findFrontierCells();
+  Cell a = getBestFrontier(); //###
 }
 
 //Updates the internal map of the drone to include recently sensed free and occupied cells.
@@ -219,45 +216,58 @@ void Drone::findFrontierCells() {
   for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
     int x = freeCell->x;
     int y = freeCell->y;
+    int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
     if (internalMap[x][y] == Frontier) {
-      internalMap[x][y] = Free; //###???
+      internalMap[x][y] = Free;
+      frontierCells.erase(i);
     }
     if (x - 1 >= 0 && internalMap[x-1][y] == Frontier) {
       internalMap[x-1][y] = Free;
+      frontierCells.erase(i-1);
       frontierCheck.push_back(Cell(x-1,y));
     }
     if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
       internalMap[x+1][y] = Free;
+      frontierCells.erase(i+1);
       frontierCheck.push_back(Cell(x+1,y));
     }
     if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
       internalMap[x][y-1] = Free;
+      frontierCells.erase(i-caveWidth);
       frontierCheck.push_back(Cell(x,y-1));
     }
     if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
       internalMap[x][y+1] = Free;
+      frontierCells.erase(i+caveWidth);
       frontierCheck.push_back(Cell(x,y+1));
     }
     frontierCheck.push_back(Cell(x,y)); //###???
   }
 
+  //Iterates through each newly sensed occupied cell.
+  //If a neighbour is a frontier cell, add it to the check list and set it to free.
   for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
     int x = occupyCell->x;
     int y = occupyCell->y;
+    int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
     if (x - 1 >= 0 && internalMap[x-1][y] == Frontier) {
       internalMap[x-1][y] = Free;
+      frontierCells.erase(i-1);
       frontierCheck.push_back(Cell(x-1,y));
     }
     if (x + 1 < caveWidth && internalMap[x+1][y] == Frontier) {
       internalMap[x+1][y] = Free;
+      frontierCells.erase(i+1);
       frontierCheck.push_back(Cell(x+1,y));
     }
     if (y - 1 >= 0 && internalMap[x][y-1] == Frontier) {
       internalMap[x][y-1] = Free;
+      frontierCells.erase(i-caveWidth);
       frontierCheck.push_back(Cell(x,y-1));
     }
     if (y + 1 < caveHeight && internalMap[x][y+1] == Frontier) {
       internalMap[x][y+1] = Free;
+      frontierCells.erase(i+caveWidth);
       frontierCheck.push_back(Cell(x,y+1));
     }
   }
@@ -266,42 +276,90 @@ void Drone::findFrontierCells() {
   for (vector<Cell>::iterator frontierCell = frontierCheck.begin(); frontierCell != frontierCheck.end(); ++frontierCell) {
     int x = frontierCell->x;
     int y = frontierCell->y;
+    int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y)); //###
+      frontierCells[i] = currentTimestep;
       continue;
     }
     if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y)); //###
+      frontierCells[i] = currentTimestep;
       continue;
     }
     if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y)); //###
+      frontierCells[i] = currentTimestep;
       continue;
     }
     if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells.push_back(Cell(x,y)); //###
+      frontierCells[i] = currentTimestep;
       continue;
     }
   }
-
-
-  Quad a = Quad(0,0,caveWidth, caveHeight); //###
-
 }
 
 //Finds the best frontier cell to navigate to.
 Cell Drone::getBestFrontier() {
 
+  float bestDist = numeric_limits<float>::max();
+  Cell bestFrontier = Cell(0,0);
+  int timestep = -1;
 
+  //Iterates over every frontier cell to find the frontier nearest to the current drone position.
+  for(auto& frontier : frontierCells) {
+    int y = (int)frontier.first / caveWidth;
+    int x = frontier.first % caveWidth;
+    float dist = pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestFrontier = Cell(x,y);
+      timestep = frontier.second;
+    }
+  }
 
+  //###
+  cout << "Best Frontier: [" << bestDist << "] - (" << bestFrontier.x << "," << bestFrontier.y << ")" << endl;
+  cout << "Timestep: (" << timestep << ")" << endl;
+  cout << "Frontier Count: " << frontierCells.size() << endl;
 
-
-
+  return bestFrontier;
 }
+
+//Adds the drone's current configuration to the path.
+void Drone::recordConfiguration() {
+  path.push_back(DroneConfig(currentTimestep, posX, posY, orientation));
+  //###maybe timestep++ here.
+}
+
+/*void navigateToTarget() {
+  //if same timestep as target, no backtracking, use A* to get the path then navigate to it.
+
+  //if previous timestep then
+  //backtrack
+  //once reached target timestep then use a*.
+}*/
+
+
+/*void getTarget() {
+  target = getBestFrontier();
+}*/
+
+
+
+
+
+//###
+/*void Drone::pathingxddd() {
+
+  sense();
+  updateInternalMap();
+  findFrontierCells();
+  Cell bestFrontier = getBestFrontier();
+
+
+}*/
 
 
 //If drone-to-drone collision avoidance becomes too tough.
