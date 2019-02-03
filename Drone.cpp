@@ -6,7 +6,9 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <limits>
+#include <queue>
 #include "Cell.h"
 #include "SenseCell.h"
 #include "DroneConfig.h"
@@ -39,6 +41,27 @@ pair<Cell,int> target; //###
 bool operator <(const SenseCell& a, const SenseCell& b) {
   return a.range < b.range;
 }
+
+//###
+/*struct CellCompare {
+  bool operator <(const Cell& a, const Cell& b) {
+    return (a.y * caveWidth + a.x) < (b.y * caveWidth + b.y);
+  }
+};*/
+
+struct OpenSetCell {
+  int cell;
+  int value;
+  OpenSetCell(int _cell, int _value) {
+    cell = _cell;
+    value = _value;
+  }
+};
+
+bool operator <(const OpenSetCell& a, const OpenSetCell& b) {
+  return a.value < b.value;
+}
+
 
 //Sets static cave properties.
 void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave) {
@@ -181,6 +204,7 @@ void Drone::sense() {
   updateInternalMap();
   findFrontierCells();
   target = getBestFrontier(); //###
+  navigateToTarget();
 }
 
 //Updates the internal map of the drone to include recently sensed free and occupied cells.
@@ -338,6 +362,12 @@ void Drone::navigateToTarget() {
   //If the target frontier cell was sensed in the current timestep.
   if (target.second == currentTimestep) {
     cout << "TARGET ON CURRENT TIMESTEP" << endl; //###
+    vector<Cell> path = astar();
+    cout << "FINAL PATH" << endl;
+    for (vector<Cell>::iterator p = path.begin(); p != path.end(); ++p) {
+      cout << "(" << p->x << "," << p->y << ")" << endl;
+    }
+
     //Use A* to plot a path.
   }
   else {
@@ -356,24 +386,154 @@ void Drone::navigateToTarget() {
 }
 
 
-/*void getTarget() {
-  target = getBestFrontier();
-}*/
+//Maps a cell to an integer value.
+int Drone::cellToInt(Cell src) {
+  return src.y * caveWidth + src.x;
+}
+
+//Maps an integer value to a cell in the cave.
+Cell Drone::intToCell(int src) {
+  int y = (int)src / caveWidth;
+  int x = src % caveWidth;
+  return Cell(x,y);
+}
+
+//Gets the distance between two cells in the cave.
+float Drone::getCellDistance(Cell start, Cell end) {
+  return abs(start.x - end.x) + abs(start.y - end.y);
+}
+
+//Gets the closest cell to the drone's current position.
+Cell Drone::getClosestCell() {
+
+  float minDist = 100; //Abitrary large number.
+  Cell closestCell;
+
+  for (int i = (int)floor(posX); i <= (int)ceil(posX); i++) {
+    for (int j = (int)floor(posY); j <= (int)ceil(posY); j++) {
+      float dist = pow(pow((float)i - posX, 2.0f) + pow((float)j - posY, 2.0f), 0.5f);
+      if (dist < minDist) {
+        minDist = dist;
+        closestCell = Cell(i,j);
+      }
+    }
+  }
+
+  return closestCell;
+}
 
 
 
+vector<Cell> Drone::getPath(map<int,int> previous, int current) {
+  vector<Cell> totalPath;
+  int cur = current;
+  totalPath.push_back(intToCell(cur));
+  //temp?
+  while (previous.count(cur) > 0) {
+    cur = previous[cur];
+    totalPath.push_back(intToCell(cur));
+  }
+  return totalPath;
+}
+
+vector<Cell> Drone::astar() {
+  Cell start = getClosestCell();
+  Cell goal = target.first;
+
+  cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << goal.x << "," << goal.y << ")" << endl;
+
+  set<int> closedSet; //Set of evaluated cells.
+  set<int> openSet; //Set of unevaluated cells.
+  openSet.insert(cellToInt(start));
+
+  map<int,int> previous;
+
+  map<int,float> gScore;
+  gScore[cellToInt(start)] = 0;
+
+  map<int,float> fScore;
+  fScore[cellToInt(start)] = getCellDistance(start, goal);
+
+  while (!openSet.empty()) {
+    Cell current;
+    float minScore = numeric_limits<float>::max();
+
+    //Gets the cell with the smallest fScore.
+    cout << "[FSCORE] - ";
+    for (auto const& x : fScore) {
+      cout << "(" << intToCell(x.first).x << "," << intToCell(x.first).y << "," << x.second << ")";
+      //X is in openset.
+      if (openSet.count(x.first) > 0 && x.second < minScore) {
+        minScore = x.second;
+        current = intToCell(x.first);
+      }
+    }
+
+    cout << endl << "[Current] - (" << current.x << "," << current.y << ")" << endl;
+
+    int currentI = cellToInt(current);
+
+    if (current == goal) {
+      return getPath(previous, currentI);
+    }
+
+    set<int>::iterator currentIt = openSet.find(currentI);
+    openSet.erase(currentIt);
+    closedSet.insert(currentI);
+
+    vector<Cell> neighbours;
+    int x = current.x;
+    int y = current.y;
+    if (x - 1 >= 0 && (cave[x-1][y] == Free || cave[x-1][y] == Frontier)) {
+      neighbours.push_back(Cell(x-1,y));
+    }
+    if (x + 1 < caveWidth && (cave[x+1][y] == Free || cave[x+1][y] == Frontier)) {
+      neighbours.push_back(Cell(x+1,y));
+    }
+    if (y - 1 >= 0 && (cave[x][y-1] == Free || cave[x][y-1] == Frontier)) {
+      neighbours.push_back(Cell(x,y-1));
+    }
+    if (y + 1 < caveHeight && (cave[x][y+1] == Free || cave[x][y+1] == Frontier)) {
+      neighbours.push_back(Cell(x,y+1));
+    }
+
+    cout << "[Neighbours] - ";
+    for (vector<Cell>::iterator n = neighbours.begin(); n != neighbours.end(); ++n) {
+      Cell neighbour = *n;
+      int neighbourI = cellToInt(neighbour);
+      cout << "(" << neighbour.x << "," << neighbour.y << ") ";
+
+      //Skip neighbour cell if it has previously been evaluated.
+      if (closedSet.count(neighbourI) > 0) {
+        continue;
+      }
+
+      int midDist = gScore[currentI] + 1;
+
+      //New node discovered.
+      if (openSet.count(neighbourI) == 0) {
+        openSet.insert(neighbourI);
+      }
+      else if (midDist >= gScore[neighbourI]) {
+        continue;
+      }
+
+      previous[neighbourI] = currentI;
+      gScore[neighbourI] = midDist;
+      fScore[neighbourI] = gScore[neighbourI] + getCellDistance(neighbour, goal);
+
+    }
+    cout << endl;
 
 
-//###
-/*void Drone::pathingxddd() {
-
-  sense();
-  updateInternalMap();
-  findFrontierCells();
-  Cell bestFrontier = getBestFrontier();
+  }
 
 
-}*/
+
+}
+
+
+
 
 
 //If drone-to-drone collision avoidance becomes too tough.

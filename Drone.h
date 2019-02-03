@@ -1,4 +1,5 @@
 #include <vector>
+#include <map>
 #include "SenseCell.h"
 #include "QuadTree.h"
 using namespace std;
@@ -28,4 +29,10 @@ private:
   void updateInternalMap();
   void findFrontierCells();
   pair<Cell,int> getBestFrontier();
+  float getCellDistance(Cell start, Cell end);
+  Cell getClosestCell();
+  vector<Cell> astar(); //###
+  int cellToInt(Cell src);
+  Cell intToCell(int src);
+  vector<Cell> getPath(map<int,int> previous, int current);
 };

@@ -48,7 +48,7 @@ Cell startCell = Cell(0,0);
 float cameraPanX = 125.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
-bool caveSmooth = true; //Determines if smoothing is enabled when rendering the cave.
+bool caveSmooth = false; //Determines if smoothing is enabled when rendering the cave.
 
 //Drone.
 Drone droneA;
