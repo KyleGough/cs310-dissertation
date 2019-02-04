@@ -845,26 +845,27 @@ void keyboardInput(unsigned char key, int, int) {
 		//###Drone controls.
 		case '4':
 			droneA.setPosition(droneA.posX - 0.5f, droneA.posY);
-			droneA.sense();
+			droneA.test();
 			droneA.recordConfiguration();
 			break;
 		case '6':
 			droneA.setPosition(droneA.posX + 0.5f, droneA.posY);
-			droneA.sense();
+			droneA.test();
 			droneA.recordConfiguration();
 			break;
 		case '8':
 			droneA.setPosition(droneA.posX, droneA.posY + 0.5f);
-			droneA.sense();
+			droneA.test();
 			droneA.recordConfiguration();
 			break;
 		case '5':
 			droneA.setPosition(droneA.posX, droneA.posY - 0.5f);
-			droneA.sense();
+			droneA.test();
 			droneA.recordConfiguration();
 			break;
-		//###NAVIGATE.
-		case 'u': droneA.navigateToTarget(); break;
+		case 'u':
+		  droneA.test();
+			break;
 	}
 	glutPostRedisplay();
 }

@@ -12,8 +12,8 @@ public:
   float posX;
   float posY;
   float orientation;
-  vector<SenseCell> freeCellBuffer;
-  vector<SenseCell> occupiedCellBuffer;
+  //vector<SenseCell> freeCellBuffer;
+  //vector<SenseCell> occupiedCellBuffer;
   Quad quadCave;
   vector<vector<int>> internalMap;
   static float searchRange;
@@ -21,18 +21,22 @@ public:
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
   void init(float x, float y, string _name);
   void setPosition(float x,  float y);
-  void sense();
+  pair<vector<SenseCell>,vector<SenseCell>> sense();
   void recordConfiguration();
-  vector<Cell> navigateToTarget();
+  vector<Cell> getPathToTarget(pair<Cell,int> target);
+  //###
+  void test();
+  void testinit();
 private:
   //Member functions.
-  void updateInternalMap();
-  void findFrontierCells();
+  void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
+  void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   pair<Cell,int> getBestFrontier();
-  float getCellDistance(Cell start, Cell end);
+  float getCellManhattanDist(Cell start, Cell end);
+  float getCellEuclideanDist(Cell start, Cell end);
   Cell getClosestCell(float x, float y);
   vector<Cell> searchAStar(Cell start, Cell dest);
   int cellToInt(Cell src);
   Cell intToCell(int src);
-  vector<Cell> getPath(map<int,int> previous, int current);
+  vector<Cell> getAStarPath(map<int,int> previous, int current);
 };
