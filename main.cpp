@@ -846,30 +846,22 @@ void keyboardInput(unsigned char key, int, int) {
 		case '4':
 			droneA.setPosition(droneA.posX - 0.5f, droneA.posY);
 			droneA.sense();
-			cout << "Hello world." << endl;
 			droneA.recordConfiguration();
-			cout << "Hello world." << endl;
 			break;
 		case '6':
 			droneA.setPosition(droneA.posX + 0.5f, droneA.posY);
 			droneA.sense();
-			cout << "Hello world." << endl;
 			droneA.recordConfiguration();
-			cout << "Hello world." << endl;
 			break;
 		case '8':
 			droneA.setPosition(droneA.posX, droneA.posY + 0.5f);
 			droneA.sense();
-			cout << "Hello world." << endl;
 			droneA.recordConfiguration();
-			cout << "Hello world." << endl;
 			break;
 		case '5':
 			droneA.setPosition(droneA.posX, droneA.posY - 0.5f);
 			droneA.sense();
-			cout << "Hello world." << endl;
 			droneA.recordConfiguration();
-			cout << "Hello world." << endl;
 			break;
 		//###NAVIGATE.
 		case 'u': droneA.navigateToTarget(); break;

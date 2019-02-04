@@ -187,7 +187,10 @@ void Drone::sense() {
   findFrontierCells();
   target = getBestFrontier(); //###
   vector<Cell> g = navigateToTarget(); //###
-  cout << "Hello world." << endl;
+  cout << "PATH" << endl;
+  for (vector<Cell>::iterator p3 = g.begin(); p3 != g.end(); ++p3) {
+    cout << "(" << p3->x << "," << p3->y << ")" << endl;
+  }
 }
 
 //Updates the internal map of the drone to include recently sensed free and occupied cells.
@@ -367,11 +370,8 @@ vector<Cell> Drone::navigateToTarget() {
   //If the target frontier cell was sensed in the current timestep.
   if (targetTimestep == currentTimestep) {
     cout << "TARGET ON CURRENT TIMESTEP" << endl; //###
-    vector<Cell> path = searchAStar(startPos, target.first);
-    //###
-    for (vector<Cell>::iterator p = path.begin(); p != path.end(); ++p) {
-      cout << "(" << p->x << "," << p->y << ")" << endl;
-    }
+    vector<Cell> path = searchAStar(startPos, target.first); //Gets the path using A*.
+    reverse(path.begin(), path.end()); //Reverses the path.
     return path;
   }
   //If the target frontier was sensed in a previous timestep.
@@ -380,6 +380,7 @@ vector<Cell> Drone::navigateToTarget() {
     cout << "BACKTRACK" << endl; //###
     Cell midPos;
 
+    //Gets the position from where the target frontier was last observed from.
     for (vector<DroneConfig>::reverse_iterator config = pathList.rbegin(); config != pathList.rend(); ++config) {
       if (config->timestep == targetTimestep) {
         midPos = getClosestCell(config->x, config->y);
@@ -387,28 +388,13 @@ vector<Cell> Drone::navigateToTarget() {
       }
     }
 
-    vector<Cell> path1 = searchAStar(startPos, midPos);
-    vector<Cell> path2 = searchAStar(midPos, target.first);
-    cout << "PATH 1" << endl;
-    for (vector<Cell>::iterator p = path1.begin(); p != path1.end(); ++p) {
-      cout << "(" << p->x << "," << p->y << ")" << endl;
-    }
-    cout << "PATH 2" << endl;
-    for (vector<Cell>::iterator p = path2.begin(); p != path2.end(); ++p) {
-      cout << "(" << p->x << "," << p->y << ")" << endl;
-    }
-
-
-    cout << "Hello world." << endl;
-
-    /*path1.insert(path1.end(), path2.begin(), path2.end());
-    //still have duplicate problem. ###
-
-    cout << "PATH FULL" << endl;
-    for (vector<Cell>::iterator p = path1.begin(); p != path1.end(); ++p) {
-      cout << "(" << p->x << "," << p->y << ")" << endl;
-    }*/
-
+    vector<Cell> pathA = searchAStar(startPos, midPos);
+    vector<Cell> pathB = searchAStar(midPos, target.first);
+    reverse(pathA.begin(), pathA.end()); //Reverses path A.
+    reverse(pathB.begin(), pathB.end()); //Reverses path B.
+    pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
+    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
+    return pathA;
   }
 }
 
@@ -440,7 +426,6 @@ vector<Cell> Drone::getPath(map<int,int> previous, int current) {
     cur = previous[cur];
     totalPath.push_back(intToCell(cur));
   }
-  reverse(totalPath.begin(), totalPath.end()); //Reverses the path.
   return totalPath;
 }
 
@@ -494,21 +479,37 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     openSet.erase(currentIt);
     closedSet.insert(currentI);
 
-    vector<Cell> neighbours;
+    vector<Cell> neighbours; //List of adjacent free/frontier cells to the current cell.
     int x = current.x;
     int y = current.y;
+
+    bool left = x - 1 >= 0 && (cave[x-1][y] == Free || cave[x-1][y] == Frontier);
+    bool right = x + 1 < caveWidth && (cave[x+1][y] == Free || cave[x+1][y] == Frontier);
+    bool bottom = y - 1 >= 0 && (cave[x][y-1] == Free || cave[x][y-1] == Frontier);
+    bool top = y + 1 < caveHeight && (cave[x][y+1] == Free || cave[x][y+1] == Frontier);
+    bool bottomleft = bottom && left && (cave[x-1][y-1] == Free || cave[x-1][y-1] == Frontier);
+    bool bottomright = bottom && right && (cave[x+1][y-1] == Free || cave[x+1][y-1] == Frontier);
+    bool topleft = top && left && (cave[x-1][y+1] == Free || cave[x-1][y+1] == Frontier);
+    bool topright = top && right && (cave[x+1][y+1] == Free || cave[x+1][y+1] == Frontier);
+
+    //Left Neighbour.
     if (x - 1 >= 0 && (cave[x-1][y] == Free || cave[x-1][y] == Frontier)) {
       neighbours.push_back(Cell(x-1,y));
     }
+    //Right Neighbour.
     if (x + 1 < caveWidth && (cave[x+1][y] == Free || cave[x+1][y] == Frontier)) {
       neighbours.push_back(Cell(x+1,y));
     }
+    //Bottom Neighbour.
     if (y - 1 >= 0 && (cave[x][y-1] == Free || cave[x][y-1] == Frontier)) {
       neighbours.push_back(Cell(x,y-1));
     }
+    //Top Neighbour.
     if (y + 1 < caveHeight && (cave[x][y+1] == Free || cave[x][y+1] == Frontier)) {
       neighbours.push_back(Cell(x,y+1));
     }
+    //Top-Left Neighbour.
+    //if (x - 1 >= 0 && y - 1 >= 0 && ())
 
     //###cout << "[Neighbours] - ";
     for (vector<Cell>::iterator n = neighbours.begin(); n != neighbours.end(); ++n) {
