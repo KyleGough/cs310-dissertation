@@ -23,15 +23,15 @@ public:
   void setPosition(float x,  float y);
   void sense();
   void recordConfiguration();
-  void navigateToTarget();
+  vector<Cell> navigateToTarget();
 private:
   //Member functions.
   void updateInternalMap();
   void findFrontierCells();
   pair<Cell,int> getBestFrontier();
   float getCellDistance(Cell start, Cell end);
-  Cell getClosestCell();
-  vector<Cell> astar(); //###
+  Cell getClosestCell(float x, float y);
+  vector<Cell> searchAStar(Cell start, Cell dest);
   int cellToInt(Cell src);
   Cell intToCell(int src);
   vector<Cell> getPath(map<int,int> previous, int current);

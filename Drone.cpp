@@ -32,7 +32,7 @@ vector<SenseCell> freeCellBuffer; //List of free cells sensed from the last sens
 vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the last sense operation.
 vector<vector<int>> internalMap; //###
 map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
-vector<DroneConfig> path; //List of drone configurations for each timestep. //###
+vector<DroneConfig> pathList; //List of drone configurations for each timestep. //###
 int currentTimestep; //###
 pair<Cell,int> target; //###
 
@@ -40,26 +40,6 @@ pair<Cell,int> target; //###
 //Less than comparison function for two SenseCell objects.
 bool operator <(const SenseCell& a, const SenseCell& b) {
   return a.range < b.range;
-}
-
-//###
-/*struct CellCompare {
-  bool operator <(const Cell& a, const Cell& b) {
-    return (a.y * caveWidth + a.x) < (b.y * caveWidth + b.y);
-  }
-};*/
-
-struct OpenSetCell {
-  int cell;
-  int value;
-  OpenSetCell(int _cell, int _value) {
-    cell = _cell;
-    value = _value;
-  }
-};
-
-bool operator <(const OpenSetCell& a, const OpenSetCell& b) {
-  return a.value < b.value;
 }
 
 
@@ -90,6 +70,8 @@ void Drone::init(float x, float y, string _name) {
     }
     internalMap.push_back(column);
   }
+
+  recordConfiguration();
 }
 
 //Sets the drone's current position in the cave.
@@ -204,7 +186,8 @@ void Drone::sense() {
   updateInternalMap();
   findFrontierCells();
   target = getBestFrontier(); //###
-  navigateToTarget();
+  vector<Cell> g = navigateToTarget(); //###
+  cout << "Hello world." << endl;
 }
 
 //Updates the internal map of the drone to include recently sensed free and occupied cells.
@@ -353,36 +336,80 @@ pair<Cell,int> Drone::getBestFrontier() {
 
 //Adds the drone's current configuration to the path.
 void Drone::recordConfiguration() {
-  path.push_back(DroneConfig(currentTimestep, posX, posY, orientation));
+  pathList.push_back(DroneConfig(currentTimestep, posX, posY, orientation));
   currentTimestep++;
 }
 
-void Drone::navigateToTarget() {
+//Gets the closest cell to the drone's current position.
+Cell Drone::getClosestCell(float x, float y) {
+
+  float minDist = 100; //Abitrary large number.
+  Cell closestCell;
+
+  for (int i = (int)floor(x); i <= (int)ceil(x); i++) {
+    for (int j = (int)floor(y); j <= (int)ceil(y); j++) {
+      float dist = pow(pow((float)i - x, 2.0f) + pow((float)j - y, 2.0f), 0.5f);
+      if (dist < minDist) {
+        minDist = dist;
+        closestCell = Cell(i,j);
+      }
+    }
+  }
+
+  return closestCell;
+}
+
+
+vector<Cell> Drone::navigateToTarget() {
+  int targetTimestep = target.second;
+  Cell startPos = getClosestCell(posX, posY);
 
   //If the target frontier cell was sensed in the current timestep.
-  if (target.second == currentTimestep) {
+  if (targetTimestep == currentTimestep) {
     cout << "TARGET ON CURRENT TIMESTEP" << endl; //###
-    vector<Cell> path = astar();
-    cout << "FINAL PATH" << endl;
+    vector<Cell> path = searchAStar(startPos, target.first);
+    //###
     for (vector<Cell>::iterator p = path.begin(); p != path.end(); ++p) {
       cout << "(" << p->x << "," << p->y << ")" << endl;
     }
-
-    //Use A* to plot a path.
+    return path;
   }
+  //If the target frontier was sensed in a previous timestep.
   else {
     //Backtrack.
-    cout << "BACKTRACK REQUIRED" << endl; //###
-    //A*2
+    cout << "BACKTRACK" << endl; //###
+    Cell midPos;
+
+    for (vector<DroneConfig>::reverse_iterator config = pathList.rbegin(); config != pathList.rend(); ++config) {
+      if (config->timestep == targetTimestep) {
+        midPos = getClosestCell(config->x, config->y);
+        break;
+      }
+    }
+
+    vector<Cell> path1 = searchAStar(startPos, midPos);
+    vector<Cell> path2 = searchAStar(midPos, target.first);
+    cout << "PATH 1" << endl;
+    for (vector<Cell>::iterator p = path1.begin(); p != path1.end(); ++p) {
+      cout << "(" << p->x << "," << p->y << ")" << endl;
+    }
+    cout << "PATH 2" << endl;
+    for (vector<Cell>::iterator p = path2.begin(); p != path2.end(); ++p) {
+      cout << "(" << p->x << "," << p->y << ")" << endl;
+    }
+
+
+    cout << "Hello world." << endl;
+
+    /*path1.insert(path1.end(), path2.begin(), path2.end());
+    //still have duplicate problem. ###
+
+    cout << "PATH FULL" << endl;
+    for (vector<Cell>::iterator p = path1.begin(); p != path1.end(); ++p) {
+      cout << "(" << p->x << "," << p->y << ")" << endl;
+    }*/
+
   }
-
-
-  //if same timestep as target, no backtracking, use A* to get the path then navigate to it.
-
-
-  //if previous timestep then
-  //backtrack
-  //once reached target timestep then use a*.
 }
 
 
@@ -403,26 +430,6 @@ float Drone::getCellDistance(Cell start, Cell end) {
   return abs(start.x - end.x) + abs(start.y - end.y);
 }
 
-//Gets the closest cell to the drone's current position.
-Cell Drone::getClosestCell() {
-
-  float minDist = 100; //Abitrary large number.
-  Cell closestCell;
-
-  for (int i = (int)floor(posX); i <= (int)ceil(posX); i++) {
-    for (int j = (int)floor(posY); j <= (int)ceil(posY); j++) {
-      float dist = pow(pow((float)i - posX, 2.0f) + pow((float)j - posY, 2.0f), 0.5f);
-      if (dist < minDist) {
-        minDist = dist;
-        closestCell = Cell(i,j);
-      }
-    }
-  }
-
-  return closestCell;
-}
-
-
 
 vector<Cell> Drone::getPath(map<int,int> previous, int current) {
   vector<Cell> totalPath;
@@ -433,14 +440,20 @@ vector<Cell> Drone::getPath(map<int,int> previous, int current) {
     cur = previous[cur];
     totalPath.push_back(intToCell(cur));
   }
+  reverse(totalPath.begin(), totalPath.end()); //Reverses the path.
   return totalPath;
 }
 
-vector<Cell> Drone::astar() {
-  Cell start = getClosestCell();
-  Cell goal = target.first;
+vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << goal.x << "," << goal.y << ")" << endl;
+  cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << dest.x << "," << dest.y << ")" << endl;
+
+  //If start cell is the same as the destination.
+  if (start == dest) {
+    vector<Cell> single;
+    single.push_back(start);
+    return single;
+  }
 
   set<int> closedSet; //Set of evaluated cells.
   set<int> openSet; //Set of unevaluated cells.
@@ -452,16 +465,16 @@ vector<Cell> Drone::astar() {
   gScore[cellToInt(start)] = 0;
 
   map<int,float> fScore;
-  fScore[cellToInt(start)] = getCellDistance(start, goal);
+  fScore[cellToInt(start)] = getCellDistance(start, dest);
 
   while (!openSet.empty()) {
     Cell current;
     float minScore = numeric_limits<float>::max();
 
     //Gets the cell with the smallest fScore.
-    cout << "[FSCORE] - ";
+    //###cout << "[FSCORE] - ";
     for (auto const& x : fScore) {
-      cout << "(" << intToCell(x.first).x << "," << intToCell(x.first).y << "," << x.second << ")";
+      //###cout << "(" << intToCell(x.first).x << "," << intToCell(x.first).y << "," << x.second << ")";
       //X is in openset.
       if (openSet.count(x.first) > 0 && x.second < minScore) {
         minScore = x.second;
@@ -469,11 +482,11 @@ vector<Cell> Drone::astar() {
       }
     }
 
-    cout << endl << "[Current] - (" << current.x << "," << current.y << ")" << endl;
+    //###cout << endl << "[Current] - (" << current.x << "," << current.y << ")" << endl;
 
     int currentI = cellToInt(current);
 
-    if (current == goal) {
+    if (current == dest) {
       return getPath(previous, currentI);
     }
 
@@ -497,11 +510,11 @@ vector<Cell> Drone::astar() {
       neighbours.push_back(Cell(x,y+1));
     }
 
-    cout << "[Neighbours] - ";
+    //###cout << "[Neighbours] - ";
     for (vector<Cell>::iterator n = neighbours.begin(); n != neighbours.end(); ++n) {
       Cell neighbour = *n;
       int neighbourI = cellToInt(neighbour);
-      cout << "(" << neighbour.x << "," << neighbour.y << ") ";
+      //###cout << "(" << neighbour.x << "," << neighbour.y << ") ";
 
       //Skip neighbour cell if it has previously been evaluated.
       if (closedSet.count(neighbourI) > 0) {
@@ -520,27 +533,13 @@ vector<Cell> Drone::astar() {
 
       previous[neighbourI] = currentI;
       gScore[neighbourI] = midDist;
-      fScore[neighbourI] = gScore[neighbourI] + getCellDistance(neighbour, goal);
+      fScore[neighbourI] = gScore[neighbourI] + getCellDistance(neighbour, dest);
 
     }
-    cout << endl;
-
-
+    //###cout << endl;
   }
-
-
-
 }
-
-
-
 
 
 //If drone-to-drone collision avoidance becomes too tough.
 //Allow them to pass through each other, saying they take different altitudes.
-
-//(1) Search local area. DONE
-//(2) Place sensed data into internal map. DONE
-//(3) Compute frontier cells. DONE
-//(4) Find optimal frontier cell.
-//(5) Plan path to frontier cell.
