@@ -80,7 +80,7 @@ void Drone::setPosition(float x, float y) {
   posX = x;
   posY = y;
   //###
-  cout << " + [" << name << "]" << " - Pos: (" << posX << "," << posY << ")" << endl;
+  //cout << " + [" << name << "]" << " - Pos: (" << posX << "," << posY << ")" << endl;
 }
 
 //Models the sensing of the immediate local environment.
@@ -475,14 +475,14 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     int x = current.x;
     int y = current.y;
 
-    bool left = x - 1 >= 0 && (cave[x-1][y] == Free || cave[x-1][y] == Frontier);
-    bool right = x + 1 < caveWidth && (cave[x+1][y] == Free || cave[x+1][y] == Frontier);
-    bool bottom = y - 1 >= 0 && (cave[x][y-1] == Free || cave[x][y-1] == Frontier);
-    bool top = y + 1 < caveHeight && (cave[x][y+1] == Free || cave[x][y+1] == Frontier);
-    bool bottomleft = bottom && left && (cave[x-1][y-1] == Free || cave[x-1][y-1] == Frontier);
-    bool bottomright = bottom && right && (cave[x+1][y-1] == Free || cave[x+1][y-1] == Frontier);
-    bool topleft = top && left && (cave[x-1][y+1] == Free || cave[x-1][y+1] == Frontier);
-    bool topright = top && right && (cave[x+1][y+1] == Free || cave[x+1][y+1] == Frontier);
+    bool left = x - 1 >= 0 && (internalMap[x-1][y] == Free || internalMap[x-1][y] == Frontier);
+    bool right = x + 1 < caveWidth && (internalMap[x+1][y] == Free || internalMap[x+1][y] == Frontier);
+    bool bottom = y - 1 >= 0 && (internalMap[x][y-1] == Free || internalMap[x][y-1] == Frontier);
+    bool top = y + 1 < caveHeight && (internalMap[x][y+1] == Free || internalMap[x][y+1] == Frontier);
+    bool bottomleft = bottom && left && (internalMap[x-1][y-1] == Free || internalMap[x-1][y-1] == Frontier);
+    bool bottomright = bottom && right && (internalMap[x+1][y-1] == Free || internalMap[x+1][y-1] == Frontier);
+    bool topleft = top && left && (internalMap[x-1][y+1] == Free || internalMap[x-1][y+1] == Frontier);
+    bool topright = top && right && (internalMap[x+1][y+1] == Free || internalMap[x+1][y+1] == Frontier);
 
     //Left Neighbour.
     if (left) { neighbours.push_back(Cell(x-1,y)); }
@@ -546,19 +546,24 @@ void Drone::testinit() {
 
 void Drone::test() {
 
-  pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
-  updateInternalMap(buffers.first, buffers.second);
-  findFrontierCells(buffers.first, buffers.second);
+  cout << "Target - (" << currentTarget.first.x << "," << currentTarget.first.y << ") - " << targetPath.size() << endl;
 
-  if (!cave[currentTarget.first.x][currentTarget.first.y] == Frontier) {
+  if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
+    cout << "New Target" << endl;
     currentTarget = getBestFrontier();
     targetPath = getPathToTarget(currentTarget);
   }
   else {
-    cout << "[Pos]" << targetPath.front().x << "," << targetPath.front().y << endl;
+    cout << "Current Target" << endl;
+    cout << "[Pos] - " << targetPath.front().x << "," << targetPath.front().y << endl;
     setPosition(targetPath.front().x, targetPath.front().y);
     targetPath.erase(targetPath.begin()); //Removes the first cell in the target path.
+    cout << "[Nxt] - " << targetPath.front().x << "," << targetPath.front().y << endl;
   }
+
+  pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
+  updateInternalMap(buffers.first, buffers.second);
+  findFrontierCells(buffers.first, buffers.second);
 
   recordConfiguration();
 }

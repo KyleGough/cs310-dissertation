@@ -754,8 +754,9 @@ void renderDrone() {
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
-	//usleep(2500); // in microseconds
-	//glutPostRedisplay();
+	usleep(2500); // in microseconds
+	droneA.test();
+	glutPostRedisplay();
 }
 
 void display() {
@@ -774,9 +775,9 @@ void display() {
 	setLight(globalLight);
 
 	//###DEBUG.
-	cout << " + [Camera] - Pan: (" << cameraPanX << ":" << cameraPanY << ")" << " - FOV: " << cameraFOV << endl;
-	cout << " + [Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
-	cout << "[=========================================================]" << endl;
+	//###cout << " + [Camera] - Pan: (" << cameraPanX << ":" << cameraPanY << ")" << " - FOV: " << cameraFOV << endl;
+	//###cout << " + [Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
+	//###cout << "[=========================================================]" << endl;
 
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
