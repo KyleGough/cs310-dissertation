@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <queue>
 #include <vector>
+#include <random>
 #include "SimplexNoise.h" //Perlin Noise.
 #include "Draw.h" //Draw functions.
 #include "Cell.h" //Cell struct.
@@ -313,6 +314,20 @@ void removeNonBorderOccupiedAreas() {
 void generateCave() {
 	fillPercentage = (rand() % 20) + 40; //Range: 40 -> 60.
 	noiseScale = (rand() % 90) + 10; //Range: 10 -> 100.
+
+	default_random_engine generator;
+	normal_distribution<float> fillDistribution(50, 10);
+	normal_distribution<float> noiseDistribution(55, 45);
+
+	fillPercentage = (int)fillDistribution(generator);
+	if (fillPercentage < 40) { fillPercentage = 40; }
+	if (fillPercentage > 60) { fillPercentage = 60; }
+
+	/*noiseScale = (int)noiseDistribution(generator);
+	if (noiseScale < 10) { noiseScale = 10; }
+	if (noiseScale > 100) { noiseScale = 100; }*/
+	//###idle has been commented out.
+
 	randomiseCave(); //Uses simplex noise to create a random cave.
 	smoothCave(25); //Uses cellular automata to smooth the cave cells.
 	startCell = findStartCell(); //Finds an appropraite starting location.
@@ -341,11 +356,10 @@ void displayControls() {
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'n' - Scale Noise Up", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'m' - Scale Noise Down", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"' ' - Generate Cave", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"'k' - Decrease Fill Percentage", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 240, 0.15f, (char *)"'l' - Increase Fill Percentage", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'n / m' - Scale Noise Up/Down", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"' ' - Generate Cave", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'k / l' - Fill% Up/Down", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"'t' - Toggle Smooth Cells.", textColour);
 }
 
 //Draws the cave structure, features no smoothing.
@@ -754,9 +768,9 @@ void renderDrone() {
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
-	usleep(2500); // in microseconds
+	/*usleep(2500); // in microseconds
 	droneA.test();
-	glutPostRedisplay();
+	glutPostRedisplay();*/
 }
 
 void display() {
@@ -773,11 +787,6 @@ void display() {
 	//Eye Position, Reference Point, Up Vector.
 	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
 	setLight(globalLight);
-
-	//###DEBUG.
-	//###cout << " + [Camera] - Pan: (" << cameraPanX << ":" << cameraPanY << ")" << " - FOV: " << cameraFOV << endl;
-	//###cout << " + [Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
-	//###cout << "[=========================================================]" << endl;
 
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
@@ -843,30 +852,6 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'p': droneA.sense(); break;
 		//###Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
-		//###Drone controls.
-		case '4':
-			droneA.setPosition(droneA.posX - 0.5f, droneA.posY);
-			droneA.test();
-			droneA.recordConfiguration();
-			break;
-		case '6':
-			droneA.setPosition(droneA.posX + 0.5f, droneA.posY);
-			droneA.test();
-			droneA.recordConfiguration();
-			break;
-		case '8':
-			droneA.setPosition(droneA.posX, droneA.posY + 0.5f);
-			droneA.test();
-			droneA.recordConfiguration();
-			break;
-		case '5':
-			droneA.setPosition(droneA.posX, droneA.posY - 0.5f);
-			droneA.test();
-			droneA.recordConfiguration();
-			break;
-		case 'u':
-		  droneA.test();
-			break;
 	}
 	glutPostRedisplay();
 }
@@ -899,6 +884,9 @@ void init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
+
+	//Seed output to console.
+	cout << "[Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
 }
 
 int main(int argc, char* argv[]) {
