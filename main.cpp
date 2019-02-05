@@ -768,9 +768,9 @@ void renderDrone() {
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
-	/*usleep(2500); // in microseconds
+	usleep(2500); // in microseconds
 	droneA.test();
-	glutPostRedisplay();*/
+	glutPostRedisplay();
 }
 
 void display() {
