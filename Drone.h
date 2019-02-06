@@ -20,9 +20,7 @@ public:
   pair<vector<SenseCell>,vector<SenseCell>> sense();
   void recordConfiguration();
   vector<Cell> getPathToTarget(pair<Cell,int> target);
-  //###
-  void test();
-  void testinit();
+  void process();
 private:
   //Member functions.
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);

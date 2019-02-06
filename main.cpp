@@ -20,7 +20,6 @@
 #include "MapCell.h"
 using namespace std;
 
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Cave Properties.
 const int caveWidth = 250; //Number of cells making the width of the cave.
@@ -50,9 +49,11 @@ float cameraPanX = 125.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
 bool caveSmooth = false; //Determines if smoothing is enabled when rendering the cave.
+int cameraView = -1;
 
 //Drone.
-Drone droneA;
+vector<Drone> droneList;
+int droneCount = 1;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -243,7 +244,7 @@ Cell findStartCell() {
 			}
 		}
 	}
-	cout << " + Start: (" << startCell.x << "," << startCell.y << ") with count: " << max << "." << endl; //###DEBUG
+	cout << "[Start] - (" << startCell.x << "," << startCell.y << ") - Count: " << max << "." << endl; //###DEBUG
 	return startCell;
 }
 
@@ -312,21 +313,21 @@ void removeNonBorderOccupiedAreas() {
 
 //Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
 void generateCave() {
-	fillPercentage = (rand() % 20) + 40; //Range: 40 -> 60.
-	noiseScale = (rand() % 90) + 10; //Range: 10 -> 100.
 
-	default_random_engine generator;
-	normal_distribution<float> fillDistribution(50, 10);
-	normal_distribution<float> noiseDistribution(55, 45);
+	//Uses normal distributions to get random values.
+	random_device dev;
+	default_random_engine generator(dev());
+	normal_distribution<float> fillDistribution(50, 5);
+	normal_distribution<float> noiseDistribution(55, 20);
 
+	//Fill percentage. Mean: 50, Std: 5.
 	fillPercentage = (int)fillDistribution(generator);
 	if (fillPercentage < 40) { fillPercentage = 40; }
 	if (fillPercentage > 60) { fillPercentage = 60; }
-
-	/*noiseScale = (int)noiseDistribution(generator);
+	//Noise Scale. Mean: 55, Std: 20.
+	noiseScale = (int)noiseDistribution(generator);
 	if (noiseScale < 10) { noiseScale = 10; }
-	if (noiseScale > 100) { noiseScale = 100; }*/
-	//###idle has been commented out.
+	if (noiseScale > 100) { noiseScale = 100; }
 
 	randomiseCave(); //Uses simplex noise to create a random cave.
 	smoothCave(25); //Uses cellular automata to smooth the cave cells.
@@ -344,8 +345,16 @@ void generateCave() {
 		caveVector.push_back(caveColumn);
 	}
 
+	//Initialises the cave dimensions and contents.
 	Drone::setParams(caveWidth, caveHeight, caveVector);
-	droneA.init(startCell.x, startCell.y, "Drone A");
+
+	droneList.erase(droneList.begin(), droneList.end());
+	for (size_t i = 0; i < droneCount; i++) {
+		Drone newDrone;
+		newDrone.init(startCell.x, startCell.y, "Drone " + i);
+		droneList.push_back(newDrone);
+	}
+
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -356,10 +365,8 @@ void displayControls() {
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'n / m' - Scale Noise Up/Down", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"' ' - Generate Cave", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'k / l' - Fill% Up/Down", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"'t' - Toggle Smooth Cells.", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"' ' - Generate Cave", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'t' - Toggle Smooth Cells.", textColour);
 }
 
 //Draws the cave structure, features no smoothing.
@@ -761,15 +768,17 @@ void renderCaveSmooth() {
 
 //###
 void renderDrone() {
-	//Draws a drone at the starting location. //###
-	Draw::drawDrone(droneA.posX, droneA.posY, depth, Drone::searchRange);
+	//Draws a drone at the starting location.
+	for (size_t i = 0; i < droneList.size(); i++) {
+		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRange);
+	}
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 void idle() {
 	usleep(2500); // in microseconds
-	droneA.test();
+	droneList[0].process();
 	glutPostRedisplay();
 }
 
@@ -784,10 +793,17 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	//Eye Position, Reference Point, Up Vector.
-	gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
-	setLight(globalLight);
+	//Camera View.
+	if (cameraView == -1) {
+		//Eye Position, Reference Point, Up Vector.
+		gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
+	}
+	else {
+		//Eye Position, Reference Point, Up Vector.
+		gluLookAt(droneList[cameraView].posX, droneList[cameraView].posY, 25, droneList[cameraView].posX, droneList[cameraView].posY, 0, 0, 1, 0);
+	}
 
+	setLight(globalLight);
 	glPushMatrix();
 	glEnable(GL_LIGHTING);
 
@@ -797,10 +813,9 @@ void display() {
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
 	renderDrone();
 
-	//###
 	float freeColour[3] = {0.0f, 1.0f, 0.0f};
 	float occupyColour[3] = {1.0f, 0.0f, 0.0f};
-	Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneA.internalMap);
+	Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[0].internalMap); //###
 
 	glPopMatrix();
 	displayControls();
@@ -838,20 +853,18 @@ void keyboardInput(unsigned char key, int, int) {
 		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 2.5f; break;
 		//Zoom In.
 		case '[': cameraFOV = (cameraFOV >= 170.0f) ? 170.0f : cameraFOV + 2.5f; break;
-		//###Noise Scale Up.
-		case 'n': noiseScale += 1.0f; randomiseCave(); break;
-		//###Noise Scale Down.
-		case 'm': noiseScale -= 1.0f; randomiseCave(); break;
-		//###Fill Percentage Decrease.
-		case 'k': fillPercentage = (fillPercentage <= 0) ? 0 : fillPercentage - 1; randomiseCave(); break;
-		//###Fill Percentage Increase.
-		case 'l': fillPercentage = (fillPercentage >= 100) ? 100 : fillPercentage + 1; randomiseCave(); break;
 		//Generates an improved cave.
 		case ' ': generateCave(); break;
-		//Drone debug###
-		case 'p': droneA.sense(); break;
-		//###Smoothing.
+		//Smoothing.
 		case 't': caveSmooth = !caveSmooth; break;
+		//Switch Camera View.
+		case 'v':
+		case 'V':
+			cameraView++;
+			if (cameraView >= droneCount) {
+				cameraView = -1;
+			}
+			break;
 	}
 	glutPostRedisplay();
 }

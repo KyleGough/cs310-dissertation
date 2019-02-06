@@ -17,25 +17,25 @@
 using namespace std;
 
 
-static constexpr float maxVelocity = 0.25f;
-static constexpr float acceleration = 0.1f;
-float Drone::searchRange = 10.0f; //### //Range of localised search.
+float Drone::searchRange = 10.0f; //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
+static bool verbose = false;
 
-string name; //Name of the drone. //###
+string name; //Name of the drone.
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float orientation; //Orientation: 0 -> Facing North.
-//vector<SenseCell> freeCellBuffer; //List of free cells sensed from the last sense operation.
-//vector<SenseCell> occupiedCellBuffer; //List of occupied cells sensed from the last sense operation.
-vector<vector<int>> internalMap; //###
+vector<vector<int>> internalMap; //Drone's identified cells of the cave.
 map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
-vector<DroneConfig> pathList; //List of drone configurations for each timestep. //###
-int currentTimestep; //###
-pair<Cell,int> currentTarget; //###
-vector<Cell> targetPath; //###
+vector<DroneConfig> pathList; //List of drone configurations for each timestep.
+int currentTimestep; //Current timestep used to mark when frontiers were last identified.
+pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep in which it was identified.
+vector<Cell> targetPath; //List of cells that head towards the current target.
+
+//Statistics.
+float totalTravelled = 0;
 
 
 //Less than comparison function for two SenseCell objects.
@@ -70,17 +70,21 @@ void Drone::init(float x, float y, string _name) {
     internalMap.push_back(column);
   }
 
-  testinit(); //###
+  //Initial sense and target.
+  pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
+  updateInternalMap(buffers.first, buffers.second);
+  findFrontierCells(buffers.first, buffers.second);
+  currentTarget = getBestFrontier();
+  targetPath = getPathToTarget(currentTarget);
 
   recordConfiguration();
 }
 
 //Sets the drone's current position in the cave.
 void Drone::setPosition(float x, float y) {
+  totalTravelled += pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
   posX = x;
   posY = y;
-  //###
-  //cout << " + [" << name << "]" << " - Pos: (" << posX << "," << posY << ")" << endl;
 }
 
 //Models the sensing of the immediate local environment.
@@ -317,10 +321,11 @@ pair<Cell,int> Drone::getBestFrontier() {
     }
   }
 
-  //###
-  cout << "Best Frontier: [" << bestDist << "] - (" << bestFrontier.x << "," << bestFrontier.y << ")" << endl;
-  cout << "Timestep: (" << timestep << ")" << endl;
-  cout << "Frontier Count: " << frontierCells.size() << endl;
+  if (verbose) {
+    cout << "[Best Frontier] - (" << bestFrontier.x << "," << bestFrontier.y << ")" << endl;
+    cout << "[Timestep] - " << timestep << endl;
+    cout << "[Frontier Count] - " << frontierCells.size() << endl;
+  }
 
   return make_pair(bestFrontier, timestep);
 }
@@ -357,7 +362,6 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
 
   //If the target frontier cell was sensed in the current timestep.
   if (targetTimestep == currentTimestep) {
-    cout << "TARGET ON CURRENT TIMESTEP" << endl; //###
     vector<Cell> path = searchAStar(startPos, target.first); //Gets the path using A*.
     reverse(path.begin(), path.end()); //Reverses the path.
     return path;
@@ -365,7 +369,6 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
   //If the target frontier was sensed in a previous timestep.
   else {
     //Backtrack.
-    cout << "BACKTRACK" << endl; //###
     Cell midPos;
 
     //Gets the position from where the target frontier was last observed from.
@@ -413,7 +416,6 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
   vector<Cell> totalPath;
   int cur = current;
   totalPath.push_back(intToCell(cur));
-  //temp?
   while (previous.count(cur) > 0) {
     cur = previous[cur];
     totalPath.push_back(intToCell(cur));
@@ -424,7 +426,9 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << dest.x << "," << dest.y << ")" << endl;
+  if (verbose) {
+    cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << dest.x << "," << dest.y << ")" << endl;
+  }
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -450,19 +454,14 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     float minScore = numeric_limits<float>::max();
 
     //Gets the cell with the smallest fScore.
-    //###cout << "[FSCORE] - ";
     for (auto const& x : fScore) {
-      //###cout << "(" << intToCell(x.first).x << "," << intToCell(x.first).y << "," << x.second << ")";
       if (openSet.count(x.first) > 0 && x.second < minScore) {
         minScore = x.second;
         current = intToCell(x.first);
       }
     }
 
-    //###cout << endl << "[Current] - (" << current.x << "," << current.y << ")" << endl;
-
     int currentI = cellToInt(current);
-
     if (current == dest) {
       return getAStarPath(previous, currentI);
     }
@@ -471,10 +470,10 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     openSet.erase(currentIt);
     closedSet.insert(currentI);
 
-    vector<Cell> neighbours; //List of adjacent free/frontier cells to the current cell.
+    //List of adjacent free/frontier cells to the current cell.
+    vector<Cell> neighbours;
     int x = current.x;
     int y = current.y;
-
     bool left = x - 1 >= 0 && (internalMap[x-1][y] == Free || internalMap[x-1][y] == Frontier);
     bool right = x + 1 < caveWidth && (internalMap[x+1][y] == Free || internalMap[x+1][y] == Frontier);
     bool bottom = y - 1 >= 0 && (internalMap[x][y-1] == Free || internalMap[x][y-1] == Frontier);
@@ -500,19 +499,14 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     if (topleft) { neighbours.push_back(Cell(x-1,y+1)); }
     //Top-Right Neighbour.
     if (topright) { neighbours.push_back(Cell(x+1,y+1)); }
-    //###where dist = 1 change for diagonals where sqr(2)
 
-
-    //###cout << "[Neighbours] - ";
+    //Iterate over each neighbour.
     for (vector<Cell>::iterator n = neighbours.begin(); n != neighbours.end(); ++n) {
       Cell neighbour = *n;
       int neighbourI = cellToInt(neighbour);
-      //###cout << "(" << neighbour.x << "," << neighbour.y << ") ";
 
       //Skip neighbour cell if it has previously been evaluated.
-      if (closedSet.count(neighbourI) > 0) {
-        continue;
-      }
+      if (closedSet.count(neighbourI) > 0) { continue; }
 
       int midDist = gScore[currentI] + getCellEuclideanDist(current, neighbour);
 
@@ -527,38 +521,24 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
       previous[neighbourI] = currentI;
       gScore[neighbourI] = midDist;
       fScore[neighbourI] = gScore[neighbourI] + getCellManhattanDist(neighbour, dest);
-
     }
-    //###cout << endl;
   }
 }
 
 
+void Drone::process() {
 
-void Drone::testinit() {
-  pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
-  updateInternalMap(buffers.first, buffers.second);
-  findFrontierCells(buffers.first, buffers.second);
-  currentTarget = getBestFrontier();
-  targetPath = getPathToTarget(currentTarget);
-}
-
-
-void Drone::test() {
-
-  cout << "Target - (" << currentTarget.first.x << "," << currentTarget.first.y << ") - " << targetPath.size() << endl;
+  if (verbose) {
+    cout << "[Target] - (" << currentTarget.first.x << "," << currentTarget.first.y << ") - " << targetPath.size() << endl;
+  }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    cout << "New Target" << endl;
     currentTarget = getBestFrontier();
     targetPath = getPathToTarget(currentTarget);
   }
   else {
-    cout << "Current Target" << endl;
-    cout << "[Pos] - " << targetPath.front().x << "," << targetPath.front().y << endl;
     setPosition(targetPath.front().x, targetPath.front().y);
     targetPath.erase(targetPath.begin()); //Removes the first cell in the target path.
-    cout << "[Nxt] - " << targetPath.front().x << "," << targetPath.front().y << endl;
   }
 
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
