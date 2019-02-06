@@ -1,7 +1,6 @@
 #include <vector>
 #include <map>
 #include "SenseCell.h"
-#include "QuadTree.h"
 using namespace std;
 #pragma once
 
@@ -12,9 +11,6 @@ public:
   float posX;
   float posY;
   float orientation;
-  //vector<SenseCell> freeCellBuffer;
-  //vector<SenseCell> occupiedCellBuffer;
-  Quad quadCave;
   vector<vector<int>> internalMap;
   static float searchRange;
   //Member Functions.

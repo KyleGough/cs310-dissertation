@@ -33,11 +33,6 @@ const Material globalMaterial = {
   {0.01f, 0.01f, 0.01f, 1.0f},
 	{0.4f, 0.4f, 0.4f, 1.0f},
 	0.078125f
-
-	/*###{0.15f, 0.15f, 0.15f, 1.0f},
-  {0.4f, 0.4f, 0.4f, 1.0f},
-	{0.7746f, 0.7746f, 0.7746f, 1.0f},
-	76.8f*/
 };
 
 //Colours.
@@ -58,7 +53,6 @@ void setLight(const Light& light) {
 	glLightfv(light.name, GL_DIFFUSE, light.diffuse);
 	glLightfv(light.name, GL_SPECULAR, light.specular);
 	glLightfv(light.name, GL_POSITION, light.position);
-	//glLightf(light.name, GL_SPOT_CUTOFF, 60.0f);
 }
 
 #endif

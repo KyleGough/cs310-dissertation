@@ -36,23 +36,38 @@ void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
 	const float minY = -0.5f;
 	const float maxX = caveWidth - 1.5f;
 	const float maxY = caveHeight - 1.5f;
+	const float borderBuffer = 5.0f;
 
-	//Draws the border.
-	glColor3f(0.3f, 0.2f, 0.3f);
-	glPushMatrix();
-	glBegin(GL_QUAD_STRIP);
-	glVertex3f(minX, minY, 0);
-	glVertex3f(minX, minY, depth);
-	glVertex3f(maxX, minY, 0);
-	glVertex3f(maxX, minY, depth);
-	glVertex3f(maxX, maxY, 0);
-	glVertex3f(maxX, maxY, depth);
-	glVertex3f(minX, maxY, 0);
-	glVertex3f(minX, maxY, depth);
-	glVertex3f(minX, minY, 0);
-	glVertex3f(minX, minY, depth);
+	//Draws the border around the cave edges facing the camera.
+	glColor3f(0.2f, 0.1f, 0.0f);
+	glBegin(GL_POLYGON);
+	glNormal3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(minX - borderBuffer, minY + 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, minY + 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, minY - borderBuffer + 0.5f, 0);
+	glVertex3f(minX - borderBuffer, minY - borderBuffer + 0.5f, 0);
 	glEnd();
-	glPopMatrix();
+	glBegin(GL_POLYGON);
+	glNormal3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(minX - borderBuffer, maxY - 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, maxY - 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, maxY + borderBuffer - 0.5f, 0);
+	glVertex3f(minX - borderBuffer, maxY + borderBuffer - 0.5f, 0);
+	glEnd();
+	glBegin(GL_POLYGON);
+	glNormal3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(minX + 0.5f, minY, 0);
+	glVertex3f(minX - borderBuffer, minY, 0);
+	glVertex3f(minX - borderBuffer, maxY, 0);
+	glVertex3f(minX + 0.5f, maxY, 0);
+	glEnd();
+	glBegin(GL_POLYGON);
+	glNormal3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(maxX - 0.5f, minY, 0);
+	glVertex3f(maxX + borderBuffer, minY, 0);
+	glVertex3f(maxX + borderBuffer, maxY, 0);
+	glVertex3f(maxX - 0.5f, maxY, 0);
+	glEnd();
 }
 
 //Draws text onto the screen with a given colour at a given position and scale.
@@ -125,10 +140,8 @@ void Draw::drawDroneBoundingBox(float depth) {
 	glBegin(GL_LINES);
 	glVertex3f(boxPos, boxPos, 0); //Front Top-Right.
 	glVertex3f(boxPos, boxPos, depth); //Back Top-Right.
-
 	glVertex3f(boxNeg, boxPos, 0); //Front Top-Left.
 	glVertex3f(boxNeg, boxPos, depth); //Back Top-Left.
-
 	glVertex3f(boxPos, boxNeg, 0); //Front Bottom-Right.
 	glVertex3f(boxPos, boxNeg, depth); //Back Bottom-Right.
 	glEnd();
@@ -141,6 +154,7 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_LOOP);
 
+	//Draws a segmented circle.
 	int segments = 32;
 	for (size_t i = 0; i < segments; i++) {
 		float angle = 2.0f * M_PI * float(i) / float(segments);
