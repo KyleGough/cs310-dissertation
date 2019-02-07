@@ -402,7 +402,7 @@ void renderCaveNormal() {
 				glTranslatef((float)i, (float)j, 0);
 
 				//Main face.
-				glColor3fv(caveFaceColour);
+				glColor4fv(caveFaceColour);
 				if (currentCave[i][j] == Occupied) {
 					glBegin(GL_TRIANGLE_STRIP);
 					glNormal3f(0.0f, 0.0f, 1.0f);
@@ -413,7 +413,7 @@ void renderCaveNormal() {
 					glEnd();
 				}
 
-				glColor3fv(caveDepthColour);
+				glColor4fv(caveDepthColour);
 				//Left Depth face.
 				if (i - 1 >= 0 && currentCave[i-1][j] == Free) {
 					glBegin(GL_QUAD_STRIP);
@@ -507,7 +507,7 @@ void renderCaveSmooth() {
 			glPushMatrix();
 			//Translate to cell position.
 			glTranslatef((float)i, (float)j, 0);
-			glColor3fv(caveFaceColour);
+			glColor4fv(caveFaceColour);
 
 			//Gets a 4-bit value based on occupied cells in the block for use by the marching squares algorithm.
 			int tr = currentCave[i+1][j+1] == Occupied;
@@ -526,7 +526,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[5]);
 					glVertex3fv(near[7]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(ntr);
 					glVertex3fv(near[5]);
@@ -542,7 +542,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[4]);
 					glVertex3fv(near[3]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(ntl);
 					glVertex3fv(near[5]);
@@ -559,7 +559,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[7]);
 					glVertex3fv(near[3]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nt);
 					glVertex3fv(near[7]);
@@ -575,7 +575,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[2]);
 					glVertex3fv(near[1]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbl);
 					glVertex3fv(near[3]);
@@ -594,7 +594,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[1]);
 					glVertex3fv(near[2]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbr);
 					glVertex3fv(near[5]);
@@ -616,7 +616,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[1]);
 					glVertex3fv(near[2]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nl);
 					glVertex3fv(near[1]);
@@ -634,7 +634,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[2]);
 					glVertex3fv(near[1]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(ntl);
 					glVertex3fv(near[1]);
@@ -650,7 +650,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[1]);
 					glVertex3fv(near[0]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbr);
 					glVertex3fv(near[1]);
@@ -667,7 +667,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[0]);
 					glVertex3fv(near[1]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nr);
 					glVertex3fv(near[1]);
@@ -686,7 +686,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[0]);
 					glVertex3fv(near[1]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbl);
 					glVertex3fv(near[5]);
@@ -709,7 +709,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[3]);
 					glVertex3fv(near[1]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(ntr);
 					glVertex3fv(near[1]);
@@ -726,7 +726,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[0]);
 					glVertex3fv(near[2]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nb);
 					glVertex3fv(near[7]);
@@ -744,7 +744,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[0]);
 					glVertex3fv(near[2]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbr);
 					glVertex3fv(near[5]);
@@ -762,7 +762,7 @@ void renderCaveSmooth() {
 					glVertex3fv(near[2]);
 					glVertex3fv(near[0]);
 					glEnd();
-					glColor3fv(caveDepthColour);
+					glColor4fv(caveDepthColour);
 					glBegin(GL_QUADS);
 					glNormal3fv(nbl);
 					glVertex3fv(near[5]);
@@ -920,6 +920,10 @@ void init() {
 	//Material.
 	setMaterial(globalMaterial);
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+	//Blending.
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA , GL_ONE_MINUS_SRC_ALPHA);
 
 	//Light.
 	glEnable(GL_LIGHTING);

@@ -18,7 +18,7 @@ void Draw::drawBackground(float depth, float caveWidth, float caveHeight) {
 	const float maxY = caveHeight - 1.5f;
 
 	//Draws the background.
-	glColor3f(0.175f, 0.075f, 0.0f);
+	glColor4f(0.175f, 0.075f, 0.0f, 1.0f);
 	glPushMatrix();
 	glBegin(GL_POLYGON);
 	glVertex3f(minX, minY, depth);
@@ -54,7 +54,7 @@ void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
 	glEnd();
 
 	//Draws the border around the cave edges facing the camera.
-	glColor3f(0.2f, 0.1f, 0.0f);
+	glColor4f(0.2f, 0.1f, 0.0f, 1.0f);
 	glBegin(GL_POLYGON);
 	glNormal3f(0.0f, 0.0f, 1.0f);
 	glVertex3f(minX - borderBuffer, minY + 0.5f, 0);
@@ -112,7 +112,7 @@ void Draw::drawText(int x, int y, float scale, const char* text, float* textColo
 void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name) {
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
-	glColor3f(1.0f, 0.0f, 0.0f); //Red.
+	glColor4f(1.0f, 0.0f, 0.0f, 1.0f); //Red.
 	glTranslatef(x, y, 0); //Move the drone to its current position.
 
 	//Draws the name of the drone.
@@ -148,7 +148,7 @@ void Draw::drawDrone(float x, float y, float depth, float searchRadius, string n
 void Draw::drawDroneBoundingBox(float depth) {
 	float boxNeg = -0.49f;
 	float boxPos = 0.49f;
-	glColor3f(0.0f, 0.0f, 1.0f);
+	glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 	glLineWidth(3.0f);
 	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_STRIP);
@@ -177,7 +177,7 @@ void Draw::drawDroneBoundingBox(float depth) {
 
 //Draws a circle indicating the search range of the drone.
 void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
-	glColor3f(1.0f, 0.0f, 0.0f);
+	glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_LOOP);
 
@@ -199,20 +199,30 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 	//Iterates over each cell in the cave.
 	for (size_t i = 0; i < caveWidth; i++) {
 		for (size_t j = 0; j < caveHeight; j++) {
+			float d;
 			//Skip the cell if it is unknown.
 			if (cave[i][j] == Unknown) { continue; }
 			glPushMatrix();
 			switch (cave[i][j]) {
-				case Free: glColor3f(0.0f, 1.0f, 0.0f); break;
-				case Occupied: glColor3f(1.0f, 0.0f, 0.0f); break;
-				case Frontier: glColor3f(0.0f, 1.0f, 1.0f);	break;
+				case Free:
+					glColor4f(0.0f, 1.0f, 0.0f, 0.5f);
+					d = depth;
+					break;
+				case Occupied:
+					glColor4f(1.0f, 0.0f, 0.0f, 0.5f);
+					d = 0.0f;
+					break;
+				case Frontier:
+					glColor4f(0.0f, 1.0f, 1.0f, 0.5f);
+					d = depth;
+					break;
 			}
 			glTranslatef((float)i, (float)j, 0.0f);
 			glBegin(GL_TRIANGLE_STRIP);
-			glVertex3f(-0.5f, -0.5f, depth + 0.1f);
-			glVertex3f(0.5f, -0.5f, depth + 0.1f);
-			glVertex3f(-0.5f, 0.5f, depth + 0.1f);
-			glVertex3f(0.5f, 0.5f, depth + 0.1f);
+			glVertex3f(-0.5f, -0.5f, d + 0.01f);
+			glVertex3f(0.5f, -0.5f, d + 0.01f);
+			glVertex3f(-0.5f, 0.5f, d + 0.01f);
+			glVertex3f(0.5f, 0.5f, d + 0.01f);
 			glEnd();
 			glPopMatrix();
 		}

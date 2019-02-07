@@ -36,8 +36,8 @@ const Material globalMaterial = {
 };
 
 //Colours.
-float caveFaceColour[3] = {0.2f, 0.1f, 0.0f};
-float caveDepthColour[3] = {0.2f, 0.1f, 0.05f};
+float caveFaceColour[4] = {0.2f, 0.1f, 0.0f, 1.0f};
+float caveDepthColour[4] = {0.2f, 0.1f, 0.05f, 1.0f};
 
 //Sets the properties of a given material.
 void setMaterial(const Material& material) {
