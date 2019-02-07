@@ -599,11 +599,11 @@ void Drone::process() {
   }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    cout << "A" << endl;
+    cout << name << " A" << endl;
     currentTarget = getBestFrontier();
-    cout << "B" << endl;
+    cout << name << " B" << endl;
     targetPath = getPathToTarget(currentTarget);
-    cout << "C" << endl;
+    cout << name << " C" << endl;
   }
   else {
     setPosition(targetPath.front().x, targetPath.front().y);

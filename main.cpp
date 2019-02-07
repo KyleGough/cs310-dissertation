@@ -855,6 +855,8 @@ void display() {
 	//###
 	if (droneCount != -1) {
 		renderDrone();
+	}
+	if (cameraView != -1) {
 		Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[cameraView].internalMap);
 	}
 
@@ -898,7 +900,10 @@ void keyboardInput(unsigned char key, int, int) {
 		case '[': cameraFOV = (cameraFOV >= 170.0f) ? 170.0f : cameraFOV + 2.5f; break;
 		//Generates an improved cave.
 		case 'R':
-		case 'r': generateCave(); break;
+		case 'r':
+			paused = true;
+			generateCave();
+			break;
 		//Pauses the simulation.
 		case ' ':
 			if (droneCount != -1) { paused = !paused; }
@@ -916,6 +921,9 @@ void keyboardInput(unsigned char key, int, int) {
 			droneListInit();
 			break;
 		case '2':
+			droneCount = 2;
+			droneListInit();
+			break;
 		case '3':
 		case '4':
 		case '5':

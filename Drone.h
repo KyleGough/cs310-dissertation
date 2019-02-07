@@ -1,5 +1,6 @@
 #include <vector>
 #include <map>
+#include "DroneConfig.h"
 #include "SenseCell.h"
 using namespace std;
 #pragma once
@@ -7,13 +8,13 @@ using namespace std;
 class Drone {
 public:
   //Data Members.
+  static float searchRadius;
   string name;
   float posX;
   float posY;
   float bearing;
   bool complete;
   vector<vector<int>> internalMap;
-  static float searchRadius;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
   void init(float x, float y, string _name, int _frontierChoiceMethod);
@@ -23,6 +24,16 @@ public:
   vector<Cell> getPathToTarget(pair<Cell,int> target);
   void process();
 private:
+  //Data Members.
+  map<int, int> frontierCells;
+  vector<DroneConfig> pathList;
+  int currentTimestep;
+  pair<Cell,int> currentTarget;
+  vector<Cell> targetPath;
+  float totalTravelled;
+  int freeCount;
+  int occupiedCount;
+  int frontierChoiceMethod;
   //Member functions.
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
