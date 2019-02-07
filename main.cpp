@@ -305,6 +305,8 @@ void removeNonBorderOccupiedAreas() {
 //Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
 void generateCave() {
 
+	droneCount = -1;
+
 	//Uses normal distributions to get random values.
 	random_device dev;
 	default_random_engine generator(dev());
@@ -353,14 +355,6 @@ void generateCave() {
 
 	//Initialises the cave dimensions and contents.
 	Drone::setParams(caveWidth, caveHeight, caveVector);
-
-	droneList.erase(droneList.begin(), droneList.end());
-	for (size_t i = 0; i < droneCount; i++) {
-		Drone newDrone;
-		newDrone.init(startCell.x, startCell.y, "Drone " + i);
-		droneList.push_back(newDrone);
-	}
-
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -811,12 +805,27 @@ void setCameraView() {
 	}
 }
 
+//###
+void droneListInit() {
+	droneList.erase(droneList.begin(), droneList.end());
+	string droneNames[9] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota"};
+	int droneMethod[9] = {0,1,0,0,0,0,0,0,0}; //###frontier selection, for debug atm.
+	for (size_t i = 0; i < droneCount; i++) {
+		Drone newDrone;
+		newDrone.init(startCell.x, startCell.y, droneNames[i], droneMethod[i]);
+		droneList.push_back(newDrone);
+	}
+}
 
 
 void idle() {
 	if (!paused) {
 		usleep(2500); //2500 Microseconds.
-		droneList[0].process();
+		for (size_t i = 0; i < droneCount; i++) {
+			if (!droneList[i].complete) {
+				droneList[i].process();
+			}
+		}
 		glutPostRedisplay();
 	}
 }
@@ -842,11 +851,12 @@ void display() {
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
-	renderDrone();
 
-	float freeColour[3] = {0.0f, 1.0f, 0.0f};
-	float occupyColour[3] = {1.0f, 0.0f, 0.0f};
-	Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[0].internalMap); //###
+	//###
+	if (droneCount != -1) {
+		renderDrone();
+		Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[cameraView].internalMap);
+	}
 
 	glPopMatrix();
 	displayControls();
@@ -890,13 +900,30 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'R':
 		case 'r': generateCave(); break;
 		//Pauses the simulation.
-		case ' ': paused = !paused; break;
+		case ' ':
+			if (droneCount != -1) { paused = !paused; }
+			break;
 		//Smoothing.
 		case 'T':
 		case 't': caveSmooth = !caveSmooth; break;
 		//Switch Camera View.
 		case 'v':
 		case 'V': cameraView = (++cameraView >= droneCount) ? -1 : cameraView; break;
+		//Start simulation with n drones.
+		//###
+		case '1':
+			droneCount = 1;
+			droneListInit();
+			break;
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			break;
 	}
 	glutPostRedisplay();
 }

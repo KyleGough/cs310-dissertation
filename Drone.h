@@ -11,11 +11,12 @@ public:
   float posX;
   float posY;
   float bearing;
+  bool complete;
   vector<vector<int>> internalMap;
   static float searchRadius;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
-  void init(float x, float y, string _name);
+  void init(float x, float y, string _name, int _frontierChoiceMethod);
   void setPosition(float x,  float y);
   pair<vector<SenseCell>,vector<SenseCell>> sense();
   void recordConfiguration();
@@ -27,7 +28,7 @@ private:
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   pair<Cell,int> getBestFrontier();
   pair<Cell,int> getNearestFrontier();
-  void getLatestFrontier();
+  pair<Cell,int> getLatestFrontier();
   float getCellManhattanDist(Cell start, Cell end);
   float getCellEuclideanDist(Cell start, Cell end);
   Cell getClosestCell(float x, float y);
@@ -35,4 +36,5 @@ private:
   int cellToInt(Cell src);
   Cell intToCell(int src);
   vector<Cell> getAStarPath(map<int,int> previous, int current);
+  void outputStatistics();
 };

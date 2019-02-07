@@ -23,12 +23,13 @@ float Drone::searchRadius = 10.0f; //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
-static bool verbose = false;
 
 string name; //Name of the drone.
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float bearing; //0 -> Facing North.
+bool complete = false; //Has finished exploration.
+int frontierChoiceMethod;
 vector<vector<int>> internalMap; //Drone's identified cells of the cave.
 map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
 vector<DroneConfig> pathList; //List of drone configurations for each timestep.
@@ -37,7 +38,9 @@ pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep
 vector<Cell> targetPath; //List of cells that head towards the current target.
 
 //Statistics.
-float totalTravelled = 0;
+float totalTravelled;
+int freeCount;
+int occupiedCount;
 
 
 //Less than comparison function for two SenseCell objects.
@@ -53,12 +56,16 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 }
 
 //Initalises the drone's starting position, name and internal map.
-void Drone::init(float x, float y, string _name) {
+void Drone::init(float x, float y, string _name, int _frontierChoiceMethod) {
   posX = x;
   posY = y;
   bearing = 0.0f;
   name = _name;
+  frontierChoiceMethod = _frontierChoiceMethod;
   currentTimestep = 0; //Resets timestep.
+  totalTravelled = 0;
+  freeCount = 0;
+  occupiedCount = 0;
   currentTarget = make_pair(Cell(-1,-1), -1); //Unreachable default target.
   frontierCells.clear(); //Clears the frontier cells.
 
@@ -87,9 +94,9 @@ void Drone::setPosition(float x, float y) {
   totalTravelled += pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
   //Calculates the bearing of the drone.
   bearing = atan2(x - posX,y - posY);
-  if (bearing < 0.0f) {
+  /*if (bearing < 0.0f) {
     bearing += M_PI * 2;
-  }
+  }*/ //###
   //Sets the position.
   posX = x;
   posY = y;
@@ -203,6 +210,7 @@ void Drone::updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell
     int y = freeCell->y;
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Free;
+      freeCount++;
     }
   }
   //Adds all occupied cells to the internal map.
@@ -211,6 +219,7 @@ void Drone::updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell
     int y = occupyCell->y;
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Occupied;
+      occupiedCount++;
     }
   }
 }
@@ -312,14 +321,16 @@ void Drone::findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell
 
 //Finds the best frontier cell to navigate to.
 pair<Cell,int> Drone::getBestFrontier() {
-
-  getLatestFrontier();
-  return getNearestFrontier();
-
+  switch (frontierChoiceMethod) {
+    case 0:
+      return getNearestFrontier();
+    case 1:
+      return getLatestFrontier();
+  }
 }
 
-//Gets the latest frontier cell added to the frontier list.
-void Drone::getLatestFrontier() {
+//Gets the latest frontier cell added to the frontier list. //###
+pair<Cell,int> Drone::getLatestFrontier() {
 
   int maxTimestep = 0;
 
@@ -330,18 +341,42 @@ void Drone::getLatestFrontier() {
     }
   }
 
-  //Gets list of all max ts cells.
+  //Gets all the frontiers which have the maximum timestep.
+  vector<pair<Cell,int>> latestFrontiers;
+  for(auto& frontier : frontierCells) {
+    if (frontier.second == maxTimestep) {
+      latestFrontiers.push_back(make_pair(intToCell(frontier.first), maxTimestep));
+    }
+  }
 
-  //sort by closeness to bearing.
+  float bestBearing = numeric_limits<float>::max();
+  Cell bestFrontier;
+  int ts;
 
+  for(auto& cell : latestFrontiers) {
+    float bearing2 = atan2(cell.first.x - posX, cell.first.y - posY);
+    float bearingDiff = bearing - bearing2;
+    if (bearingDiff < -M_PI) {
+      bearingDiff += M_PI;
+    }
+    if (bearingDiff >= M_PI) {
+      bearingDiff -= M_PI;
+    }
+    if (abs(bearingDiff) < bestBearing) {
+      bestBearing = abs(bearingDiff);
+      bestFrontier = cell.first;
+      ts = cell.second;
+    }
+  }
 
+  return make_pair(bestFrontier, ts);
 }
 
 //Gets the nearest frontier cell to the drone's current position.
 pair<Cell,int> Drone::getNearestFrontier() {
   float bestDist = numeric_limits<float>::max();
-  Cell bestFrontier = Cell(0,0);
-  int timestep = -1;
+  Cell bestFrontier;
+  int timestep;
 
   //Iterates over every frontier cell to find the frontier nearest to the current drone position.
   for(auto& frontier : frontierCells) {
@@ -455,9 +490,9 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  if (verbose) {
-    cout << "[A STAR] - Start: (" << start.x << "," << start.y << ") - Goal: (" << dest.x << "," << dest.y << ")" << endl;
-  }
+  //###
+  cout << start.x << "," << start.y << " - " << dest.x << "," << dest.y << endl;
+
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -557,13 +592,18 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
 void Drone::process() {
 
-  if (verbose) {
-    cout << "[Target] - (" << currentTarget.first.x << "," << currentTarget.first.y << ") - " << targetPath.size() << endl;
+  if (frontierCells.size() == 0) {
+    complete = true;
+    outputStatistics();
+    return;
   }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
+    cout << "A" << endl;
     currentTarget = getBestFrontier();
+    cout << "B" << endl;
     targetPath = getPathToTarget(currentTarget);
+    cout << "C" << endl;
   }
   else {
     setPosition(targetPath.front().x, targetPath.front().y);
@@ -573,8 +613,14 @@ void Drone::process() {
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
   updateInternalMap(buffers.first, buffers.second);
   findFrontierCells(buffers.first, buffers.second);
-
   recordConfiguration();
+}
+
+//Outputs drone statistics to the console.
+void Drone::outputStatistics() {
+  cout << "[" << name << "] - Search Complete." << endl;
+  cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
+  cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
 }
 
 //If drone-to-drone collision avoidance becomes too tough.
