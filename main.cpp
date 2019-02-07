@@ -27,17 +27,11 @@ const int caveHeight = 180; //Number of cells making the height of the cave.
 const int border = 3; //Padding of the cave border on the x-axis.
 
 //Generation Parameters.
-int fillPercentage = 50; //Percentage of the randomised environment that will be filled.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
 const int deathChance = 100;
 const int birthChance = 100;
 const float depth = -1.0f;
-
-//Simplex Noise.
-float noiseScale = 40.0f;
-float noiseOffsetX = 100.0f;
-float noiseOffsetY = 100.0f;
 
 //Cave.
 int currentCave[caveWidth][caveHeight];
@@ -54,6 +48,7 @@ int cameraView = -1;
 //Drone.
 vector<Drone> droneList;
 int droneCount = 1;
+bool paused = true;
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
@@ -97,11 +92,7 @@ void smoothCave(int iterations) {
 }
 
 //Generates the initial cave using Simplex noise.
-void randomiseCave() {
-
-	//Gets a random offset value for each direction for simplex noise.
-	noiseOffsetX = rand() % 100000;
-	noiseOffsetY = rand() % 100000;
+void randomiseCave(float noiseOffsetX, float noiseOffsetY, float noiseScale, float fillPercentage) {
 
 	//Iterates through each cell in the cave.
 	for (size_t y = 0; y < caveHeight; y++) { //For each column in the cave.
@@ -317,20 +308,35 @@ void generateCave() {
 	//Uses normal distributions to get random values.
 	random_device dev;
 	default_random_engine generator(dev());
-	normal_distribution<float> fillDistribution(50, 5);
-	normal_distribution<float> noiseDistribution(55, 20);
+	normal_distribution<float> fillDistribution(50,5);
+	normal_distribution<float> noiseDistribution(55,20);
+	normal_distribution<float> smoothDistribution(10,5);
 
 	//Fill percentage. Mean: 50, Std: 5.
-	fillPercentage = (int)fillDistribution(generator);
+	//Percentage of the randomised environment that will be filled.
+	float fillPercentage = (int)fillDistribution(generator);
 	if (fillPercentage < 40) { fillPercentage = 40; }
 	if (fillPercentage > 60) { fillPercentage = 60; }
+
 	//Noise Scale. Mean: 55, Std: 20.
-	noiseScale = (int)noiseDistribution(generator);
+	float noiseScale = (int)noiseDistribution(generator);
 	if (noiseScale < 10) { noiseScale = 10; }
 	if (noiseScale > 100) { noiseScale = 100; }
 
-	randomiseCave(); //Uses simplex noise to create a random cave.
-	smoothCave(25); //Uses cellular automata to smooth the cave cells.
+	//Smoothing Iterations.
+	int smoothIt = (int)smoothDistribution(generator);
+	if (smoothIt < 2) { smoothIt = 2; }
+	if (smoothIt > 25) { smoothIt = 25; }
+
+	//Gets a random offset value for each direction for simplex noise.
+	float noiseOffsetX = rand() % 100000;
+	float noiseOffsetY = rand() % 100000;
+
+	//Seed output to console.
+	cout << "[Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "% - Iterations: " << smoothIt << endl;
+
+	randomiseCave(noiseOffsetX, noiseOffsetY, noiseScale, fillPercentage); //Uses simplex noise to create a random cave.
+	smoothCave(smoothIt); //Uses cellular automata to smooth the cave cells.
 	startCell = findStartCell(); //Finds an appropraite starting location.
 	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
 	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
@@ -359,14 +365,29 @@ void generateCave() {
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
+//Displays the camera mode in the bottom-left corner.
+void displayCameraMode(float* textColour) {
+	//Overview.
+	if (cameraView == -1) {
+		Draw::drawText(30, 30, 0.15f, (char *)"Overview", textColour);
+	}
+	//Drone follow.
+	else {
+		Draw::drawText(30, 30, 0.15f, droneList[cameraView].name.c_str(), textColour);
+	}
+}
+
 //Displays the control text at the top-left of the window.
 void displayControls() {
 	float textColour[3] = {1.0f, 1.0f, 1.0f};
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"' ' - Generate Cave", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'r' - Generate Cave", textColour);
 	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'t' - Toggle Smooth Cells.", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'v' - Change Camera View.", textColour);
+	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"' ' - Resume/Pause Simulation.", textColour);
+	displayCameraMode(textColour);
 }
 
 //Draws the cave structure, features no smoothing.
@@ -770,16 +791,34 @@ void renderCaveSmooth() {
 void renderDrone() {
 	//Draws a drone at the starting location.
 	for (size_t i = 0; i < droneList.size(); i++) {
-		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRange);
+		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRadius, droneList[i].name);
 	}
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
+//Positions the camera according to which drone it is following.
+void setCameraView() {
+
+	//Camera View.
+	if (cameraView == -1) {
+		//Eye Position, Reference Point, Up Vector.
+		gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
+	}
+	else {
+		//Eye Position, Reference Point, Up Vector.
+		gluLookAt(droneList[cameraView].posX, droneList[cameraView].posY, 25, droneList[cameraView].posX, droneList[cameraView].posY, 0, 0, 1, 0);
+	}
+}
+
+
+
 void idle() {
-	usleep(2500); // in microseconds
-	droneList[0].process();
-	glutPostRedisplay();
+	if (!paused) {
+		usleep(2500); //2500 Microseconds.
+		droneList[0].process();
+		glutPostRedisplay();
+	}
 }
 
 void display() {
@@ -793,15 +832,7 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	//Camera View.
-	if (cameraView == -1) {
-		//Eye Position, Reference Point, Up Vector.
-		gluLookAt(cameraPanX, cameraPanY, 25, cameraPanX, cameraPanY, 0, 0, 1, 0);
-	}
-	else {
-		//Eye Position, Reference Point, Up Vector.
-		gluLookAt(droneList[cameraView].posX, droneList[cameraView].posY, 25, droneList[cameraView].posX, droneList[cameraView].posY, 0, 0, 1, 0);
-	}
+	setCameraView(); //Applies transformations for the camera.
 
 	setLight(globalLight);
 	glPushMatrix();
@@ -832,6 +863,7 @@ void reshape(int w, int h) {
 
 //Mouse event functions.
 void mouseInput(int button, int state, int x, int y) {
+
 	switch (button) {
 		//Scroll Up / Zoom Out.
 		case 3: cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 2.5f; break;
@@ -848,23 +880,23 @@ void mouseInput(int button, int state, int x, int y) {
 void keyboardInput(unsigned char key, int, int) {
 	switch (key) {
 		//Exits the program.
+		case 'Q':
 		case 'q': exit(1); break;
 		//Zoom Out.
 		case ']': cameraFOV = (cameraFOV <= 25.0f) ? 25.0f : cameraFOV - 2.5f; break;
 		//Zoom In.
 		case '[': cameraFOV = (cameraFOV >= 170.0f) ? 170.0f : cameraFOV + 2.5f; break;
 		//Generates an improved cave.
-		case ' ': generateCave(); break;
+		case 'R':
+		case 'r': generateCave(); break;
+		//Pauses the simulation.
+		case ' ': paused = !paused; break;
 		//Smoothing.
+		case 'T':
 		case 't': caveSmooth = !caveSmooth; break;
 		//Switch Camera View.
 		case 'v':
-		case 'V':
-			cameraView++;
-			if (cameraView >= droneCount) {
-				cameraView = -1;
-			}
-			break;
+		case 'V': cameraView = (++cameraView >= droneCount) ? -1 : cameraView; break;
 	}
 	glutPostRedisplay();
 }
@@ -897,9 +929,6 @@ void init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
-
-	//Seed output to console.
-	cout << "[Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "%" << endl;
 }
 
 int main(int argc, char* argv[]) {

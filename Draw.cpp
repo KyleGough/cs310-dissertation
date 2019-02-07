@@ -3,6 +3,7 @@
 #include <string.h>
 #include <cmath>
 #include <vector>
+#include <string>
 #include "MapCell.h"
 #include "Draw.h"
 using namespace std;
@@ -38,6 +39,20 @@ void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
 	const float maxY = caveHeight - 1.5f;
 	const float borderBuffer = 5.0f;
 
+	//Draws the border around the cave edges orthogonal to the camera.
+	glBegin(GL_QUAD_STRIP);
+	glVertex3f(minX - borderBuffer, minY - borderBuffer + 0.5f, 0);
+	glVertex3f(minX - borderBuffer, minY - borderBuffer + 0.5f, depth);
+	glVertex3f(maxX + borderBuffer, minY - borderBuffer + 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, minY - borderBuffer + 0.5f, depth);
+	glVertex3f(maxX + borderBuffer, maxY + borderBuffer - 0.5f, 0);
+	glVertex3f(maxX + borderBuffer, maxY + borderBuffer - 0.5f, depth);
+	glVertex3f(minX - borderBuffer, maxY + borderBuffer - 0.5f, 0);
+	glVertex3f(minX - borderBuffer, maxY + borderBuffer - 0.5f, depth);
+	glVertex3f(minX - borderBuffer, minY - borderBuffer + 0.5f, 0);
+	glVertex3f(minX - borderBuffer, minY - borderBuffer + 0.5f, depth);
+	glEnd();
+
 	//Draws the border around the cave edges facing the camera.
 	glColor3f(0.2f, 0.1f, 0.0f);
 	glBegin(GL_POLYGON);
@@ -71,7 +86,7 @@ void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
 }
 
 //Draws text onto the screen with a given colour at a given position and scale.
-void Draw::drawText(int x, int y, float scale, char* text, float* textColour) {
+void Draw::drawText(int x, int y, float scale, const char* text, float* textColour) {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
@@ -94,11 +109,23 @@ void Draw::drawText(int x, int y, float scale, char* text, float* textColour) {
 }
 
 //Draws a drone at a given position.
-void Draw::drawDrone(float x, float y, float depth, float searchRange) {
+void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name) {
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 0.0f, 0.0f); //Red.
 	glTranslatef(x, y, 0); //Move the drone to its current position.
+
+	//Draws the name of the drone.
+	glPushMatrix();
+	glLineWidth(2.0f);
+	size_t len = name.size();
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glTranslatef(-(len / 2.0f), 1.0f, 1.0f);
+	glScalef(0.020f, 0.020f, 0.0f);
+	for (size_t i = 0; i < len; i++) {
+			glutStrokeCharacter(GLUT_STROKE_ROMAN, name[i]);
+	}
+	glPopMatrix();
 
 	//Drone Object.
 	glBegin(GL_TRIANGLES);
@@ -111,7 +138,7 @@ void Draw::drawDrone(float x, float y, float depth, float searchRange) {
 	drawDroneBoundingBox(depth + 0.01f);
 
 	//Search Range.
-	drawDroneSearchingRange(searchRange, depth / 2.0f);
+	drawDroneSearchingRange(searchRadius, depth / 2.0f);
 
 	glEnable(GL_LIGHTING);
 	glPopMatrix();
@@ -149,7 +176,7 @@ void Draw::drawDroneBoundingBox(float depth) {
 }
 
 //Draws a circle indicating the search range of the drone.
-void Draw::drawDroneSearchingRange(float searchRange, float depth) {
+void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
 	glColor3f(1.0f, 0.0f, 0.0f);
 	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_LOOP);
@@ -158,8 +185,8 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 	int segments = 32;
 	for (size_t i = 0; i < segments; i++) {
 		float angle = 2.0f * M_PI * float(i) / float(segments);
-		float x = searchRange * cos(angle);
-		float y = searchRange * sin(angle);
+		float x = searchRadius * cos(angle);
+		float y = searchRadius * sin(angle);
 		glVertex3f(x, y, depth);
 	}
 
@@ -169,51 +196,25 @@ void Draw::drawDroneSearchingRange(float searchRange, float depth) {
 
 //Draws discovered cave cells in a specific colour to indicate type.
 void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave) {
-
+	//Iterates over each cell in the cave.
 	for (size_t i = 0; i < caveWidth; i++) {
 		for (size_t j = 0; j < caveHeight; j++) {
+			//Skip the cell if it is unknown.
+			if (cave[i][j] == Unknown) { continue; }
+			glPushMatrix();
 			switch (cave[i][j]) {
-				case Free:
-					glPushMatrix();
-					glColor3f(0.0f, 1.0f, 0.0f);
-					glTranslatef((float)i, (float)j, 0.0f);
-					glBegin(GL_TRIANGLE_STRIP);
-					glVertex3f(-0.5f, -0.5f, depth + 0.1f);
-					glVertex3f(0.5f, -0.5f, depth + 0.1f);
-					glVertex3f(-0.5f, 0.5f, depth + 0.1f);
-					glVertex3f(0.5f, 0.5f, depth + 0.1f);
-					glEnd();
-					glPopMatrix();
-					break;
-				case Occupied:
-					glPushMatrix();
-					glColor3f(1.0f, 0.0f, 0.0f);
-					glTranslatef((float)i, (float)j, 0.0f);
-					glBegin(GL_TRIANGLE_STRIP);
-					glVertex3f(-0.5f, -0.5f, 0.1f);
-					glVertex3f(0.5f, -0.5f, 0.1f);
-					glVertex3f(-0.5f, 0.5f, 0.1f);
-					glVertex3f(0.5f, 0.5f, 0.1f);
-					glEnd();
-					glPopMatrix();
-					break;
-				case Frontier:
-					glPushMatrix();
-					glColor3f(0.0f, 1.0f, 1.0f);
-					glTranslatef((float)i, (float)j, 0.0f);
-					glBegin(GL_TRIANGLE_STRIP);
-					glVertex3f(-0.5f, -0.5f, depth + 0.1f);
-					glVertex3f(0.5f, -0.5f, depth + 0.1f);
-					glVertex3f(-0.5f, 0.5f, depth + 0.1f);
-					glVertex3f(0.5f, 0.5f, depth + 0.1f);
-					glEnd();
-					glPopMatrix();
-					break;
-
+				case Free: glColor3f(0.0f, 1.0f, 0.0f); break;
+				case Occupied: glColor3f(1.0f, 0.0f, 0.0f); break;
+				case Frontier: glColor3f(0.0f, 1.0f, 1.0f);	break;
 			}
+			glTranslatef((float)i, (float)j, 0.0f);
+			glBegin(GL_TRIANGLE_STRIP);
+			glVertex3f(-0.5f, -0.5f, depth + 0.1f);
+			glVertex3f(0.5f, -0.5f, depth + 0.1f);
+			glVertex3f(-0.5f, 0.5f, depth + 0.1f);
+			glVertex3f(0.5f, 0.5f, depth + 0.1f);
+			glEnd();
+			glPopMatrix();
 		}
 	}
-
-
-
 }
