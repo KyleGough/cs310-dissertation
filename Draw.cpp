@@ -195,7 +195,7 @@ void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
 }
 
 //Draws discovered cave cells in a specific colour to indicate type.
-void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave) {
+void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave, float colours[][4]) {
 	//Iterates over each cell in the cave.
 	for (size_t i = 0; i < caveWidth; i++) {
 		for (size_t j = 0; j < caveHeight; j++) {
@@ -205,15 +205,15 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 			glPushMatrix();
 			switch (cave[i][j]) {
 				case Free:
-					glColor4f(0.0f, 1.0f, 0.0f, 0.5f);
+					glColor4fv(colours[0]);
 					d = depth;
 					break;
 				case Occupied:
-					glColor4f(1.0f, 0.0f, 0.0f, 0.5f);
+					glColor4fv(colours[1]);
 					d = 0.0f;
 					break;
 				case Frontier:
-					glColor4f(0.0f, 1.0f, 1.0f, 0.5f);
+					glColor4fv(colours[2]);
 					d = depth;
 					break;
 			}

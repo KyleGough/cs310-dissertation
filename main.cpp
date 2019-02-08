@@ -36,14 +36,14 @@ const float depth = -1.0f;
 //Cave.
 int currentCave[caveWidth][caveHeight];
 int tempCave[caveWidth][caveHeight];
-Cell startCell = Cell(0,0);
+Cell startCell;
 
 //Camera.
 float cameraPanX = 125.0f; //Camera translation along the x-axis.
 float cameraPanY = 90.0f; //Camera translation along the y-axis.
 float cameraFOV = 150.0f; //Field of View.
 bool caveSmooth = false; //Determines if smoothing is enabled when rendering the cave.
-int cameraView = -1;
+int cameraView = -1; //Overview camera view.
 
 //Drone.
 vector<Drone> droneList;
@@ -303,9 +303,37 @@ void removeNonBorderOccupiedAreas() {
 }
 
 //Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
-void generateCave() {
+void generateCave(float noiseOffsetX, float noiseOffsetY, float fillPercentage, float noiseScale, float smoothIt) {
 
 	droneCount = -1;
+	cameraView = -1;
+	paused = true;
+
+	//Seed output to console.
+	cout << "[Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "% - Iterations: " << smoothIt << endl;
+
+	randomiseCave(noiseOffsetX, noiseOffsetY, noiseScale, fillPercentage); //Uses simplex noise to create a random cave.
+	smoothCave(smoothIt); //Uses cellular automata to smooth the cave cells.
+	startCell = findStartCell(); //Finds an appropraite starting location.
+	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
+	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
+
+	//Converts the 2D array version of the cave into a vector of vector of ints.
+	vector<vector<int>> caveVector;
+	for (size_t i = 0; i < caveWidth; i++) {
+		vector<int> caveColumn;
+		for (size_t j = 0; j < caveHeight; j++) {
+			caveColumn.push_back(currentCave[i][j]);
+		}
+		caveVector.push_back(caveColumn);
+	}
+
+	//Initialises the cave dimensions and contents.
+	Drone::setParams(caveWidth, caveHeight, caveVector);
+}
+
+//Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
+void generateRandomCave() {
 
 	//Uses normal distributions to get random values.
 	random_device dev;
@@ -334,27 +362,7 @@ void generateCave() {
 	float noiseOffsetX = rand() % 100000;
 	float noiseOffsetY = rand() % 100000;
 
-	//Seed output to console.
-	cout << "[Seed] - Offset: (" << noiseOffsetX << "," << noiseOffsetY << ") - Scale: " << noiseScale << " - Fill: " << fillPercentage << "% - Iterations: " << smoothIt << endl;
-
-	randomiseCave(noiseOffsetX, noiseOffsetY, noiseScale, fillPercentage); //Uses simplex noise to create a random cave.
-	smoothCave(smoothIt); //Uses cellular automata to smooth the cave cells.
-	startCell = findStartCell(); //Finds an appropraite starting location.
-	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
-	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
-
-	//Converts the 2D array version of the cave into a vector of vector of ints.
-	vector<vector<int>> caveVector;
-	for (size_t i = 0; i < caveWidth; i++) {
-		vector<int> caveColumn;
-		for (size_t j = 0; j < caveHeight; j++) {
-			caveColumn.push_back(currentCave[i][j]);
-		}
-		caveVector.push_back(caveColumn);
-	}
-
-	//Initialises the cave dimensions and contents.
-	Drone::setParams(caveWidth, caveHeight, caveVector);
+	generateCave(noiseOffsetX, noiseOffsetY, fillPercentage, noiseScale, smoothIt);
 }
 
 /*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
@@ -807,9 +815,9 @@ void setCameraView() {
 
 //###
 void droneListInit() {
-	droneList.erase(droneList.begin(), droneList.end());
+	droneList.clear();
 	string droneNames[9] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota"};
-	int droneMethod[9] = {0,1,0,0,0,0,0,0,0}; //###frontier selection, for debug atm.
+	int droneMethod[9] = {1,0,0,1,0,1,0,1,0}; //###frontier selection, for debug atm.
 	for (size_t i = 0; i < droneCount; i++) {
 		Drone newDrone;
 		newDrone.init(startCell.x, startCell.y, droneNames[i], droneMethod[i]);
@@ -817,6 +825,28 @@ void droneListInit() {
 	}
 }
 
+//Draws the discovered cells of all drones in overview mode or one particular drone.
+void drawDiscoveredCells() {
+	//If there no drones present return.
+	if (droneCount == -1) { return; };
+
+	renderDrone(); //Renders the drones.
+	if (cameraView == -1) { //Overview mode.
+		 //Free, Occupied, Frontier colours.
+		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f, 0.5f}};
+		//Draws the free and occupied cells of every drone.
+		for (size_t i = 0; i < droneCount; i++) {
+			Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[i].internalMap, colours);
+		}
+	}
+	else { //Following particular drone.
+		//Free, Occupied, Frontier colours.
+		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 1.0f, 0.5f}};
+		//Draws the free, occupied and frontier cells of the selected drone.
+		Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[cameraView].internalMap, colours);
+	}
+
+}
 
 void idle() {
 	if (!paused) {
@@ -841,24 +871,20 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	setCameraView(); //Applies transformations for the camera.
+	//Applies transformations for the camera.
+	setCameraView();
 
-	setLight(globalLight);
 	glPushMatrix();
+
+	//Lighting.
+	setLight(globalLight);
 	glEnable(GL_LIGHTING);
 
 	//Draws Cave Background then Border then finally the cave structure.
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
-
-	//###
-	if (droneCount != -1) {
-		renderDrone();
-	}
-	if (cameraView != -1) {
-		Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[cameraView].internalMap);
-	}
+	drawDiscoveredCells();
 
 	glPopMatrix();
 	displayControls();
@@ -901,8 +927,8 @@ void keyboardInput(unsigned char key, int, int) {
 		//Generates an improved cave.
 		case 'R':
 		case 'r':
-			paused = true;
-			generateCave();
+			cout << "[Random]" << endl;
+			generateRandomCave();
 			break;
 		//Pauses the simulation.
 		case ' ':
@@ -915,23 +941,15 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'v':
 		case 'V': cameraView = (++cameraView >= droneCount) ? -1 : cameraView; break;
 		//Start simulation with n drones.
-		//###
-		case '1':
-			droneCount = 1;
-			droneListInit();
-			break;
-		case '2':
-			droneCount = 2;
-			droneListInit();
-			break;
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-			break;
+		case '1': droneCount = 1; droneListInit(); break;
+		case '2':	droneCount = 2;	droneListInit();break;
+		case '3':	droneCount = 3;	droneListInit(); break;
+		case '4':	droneCount = 4;	droneListInit(); break;
+		case '5':	droneCount = 5;	droneListInit(); break;
+		case '6':	droneCount = 6;	droneListInit(); break;
+		case '7':	droneCount = 7;	droneListInit(); break;
+		case '8':	droneCount = 8;	droneListInit(); break;
+		case '9':	droneCount = 9;	droneListInit(); break;
 	}
 	glutPostRedisplay();
 }
@@ -947,6 +965,23 @@ void specialKeyInput(int key, int x, int y) {
 		case GLUT_KEY_LEFT: cameraPanX -= 0.2f * cameraFOV; break;
 		//Pan Right.
 		case GLUT_KEY_RIGHT: cameraPanX += 0.2f * cameraFOV; break;
+		//Cave Generation Presets.
+		case GLUT_KEY_F1: //Jagged cave.
+			cout << "[Preset 1]" << endl;
+			generateCave(42435,6786,49,88,2);
+			break;
+		case GLUT_KEY_F2:
+			cout << "[Preset 2]" << endl;
+			break;
+		case GLUT_KEY_F3:
+			cout << "[Preset 3]" << endl;
+			break;
+		case GLUT_KEY_F4:
+			cout << "[Preset 4]" << endl;
+			break;
+		case GLUT_KEY_F5:
+			cout << "[Preset 5]" << endl;
+			break;
 	}
 	glutPostRedisplay();
 }
@@ -991,7 +1026,7 @@ int main(int argc, char* argv[]) {
 	glutIdleFunc(idle);
 
 	//Cave Generation.
-	generateCave();
+	generateRandomCave();
 
 	init();
 	glutMainLoop();

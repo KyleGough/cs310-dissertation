@@ -28,8 +28,8 @@ string name; //Name of the drone.
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float bearing; //0 -> Facing North.
-bool complete = false; //Has finished exploration.
-int frontierChoiceMethod;
+bool complete; //Has finished exploration.
+int frontierChoiceMethod; //Method of frontier selection.
 vector<vector<int>> internalMap; //Drone's identified cells of the cave.
 map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
 vector<DroneConfig> pathList; //List of drone configurations for each timestep.
@@ -38,9 +38,9 @@ pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep
 vector<Cell> targetPath; //List of cells that head towards the current target.
 
 //Statistics.
-float totalTravelled;
-int freeCount;
-int occupiedCount;
+float totalTravelled; //Total distance travelled.
+int freeCount; //Number of free cells identified.
+int occupiedCount; //Number of occupied cells identified.
 
 
 //Less than comparison function for two SenseCell objects.
@@ -57,17 +57,22 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 
 //Initalises the drone's starting position, name and internal map.
 void Drone::init(float x, float y, string _name, int _frontierChoiceMethod) {
+  //Set given parameters.
   posX = x;
   posY = y;
-  bearing = 0.0f;
   name = _name;
   frontierChoiceMethod = _frontierChoiceMethod;
-  currentTimestep = 0; //Resets timestep.
+  //Other data member defaults.
+  bearing = 0.0f; //Facing east.
+  complete = false;
+  currentTimestep = 0;
   totalTravelled = 0;
   freeCount = 0;
   occupiedCount = 0;
-  currentTarget = make_pair(Cell(-1,-1), -1); //Unreachable default target.
   frontierCells.clear(); //Clears the frontier cells.
+  pathList.clear();
+  targetPath.clear();
+  currentTarget = make_pair(Cell(-1,-1), -1); //Unreachable default target.
 
   //Sets the internal map to all unknowns.
   internalMap.clear();
@@ -94,9 +99,6 @@ void Drone::setPosition(float x, float y) {
   totalTravelled += pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
   //Calculates the bearing of the drone.
   bearing = atan2(x - posX,y - posY);
-  /*if (bearing < 0.0f) {
-    bearing += M_PI * 2;
-  }*/ //###
   //Sets the position.
   posX = x;
   posY = y;
@@ -126,15 +128,15 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
   sort(candidates.begin(), candidates.end());
 
   //Check to make sure you can't sense objects hidden behind something else.
-  for (vector<SenseCell>::iterator dest = candidates.begin(); dest != candidates.end(); ++dest) {
+  for (auto const& dest : candidates) {
     //If the cell range is 1 or less then immediately add it to the list.
-    if (dest->range <= 1) {
-      if (cave[dest->x][dest->y] == Free) {
-        freeCells.push_back(*dest);
+    if (dest.range <= 1) {
+      if (cave[dest.x][dest.y] == Free) {
+        freeCells.push_back(dest);
       }
       else {
-        occupiedCells.push_back(*dest);
-        checkCells.push_back(*dest);
+        occupiedCells.push_back(dest);
+        checkCells.push_back(dest);
       }
       continue;
     }
@@ -142,41 +144,41 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
     bool collisionDetected = false; //If an occupied cell blocks the path from the drone to the cell to be checked.
 
     //Obstacle in line of sight between drone position and destination cell check.
-    for (vector<SenseCell>::iterator occupyCheck = checkCells.begin(); occupyCheck != checkCells.end(); ++occupyCheck) {
+    for (auto const& occupyCheck :checkCells) {
       //Ignore if the cell to check is free.
-      if (cave[occupyCheck->x][occupyCheck->y] == Free) { continue; }
+      if (cave[occupyCheck.x][occupyCheck.y] == Free) { continue; }
 
-      float xDiff = dest->x - posX;
-      float yDiff = dest->y - posY;
-      float tx0 = (occupyCheck->x - 0.5f - posX) / xDiff;
-      float tx1 = (occupyCheck->x + 0.5f - posX) / xDiff;
-      float ty0 = (occupyCheck->y - 0.5f - posY) / yDiff;
-      float ty1 = (occupyCheck->y + 0.5f - posY) / yDiff;
+      float xDiff = dest.x - posX;
+      float yDiff = dest.y - posY;
+      float tx0 = (occupyCheck.x - 0.5f - posX) / xDiff;
+      float tx1 = (occupyCheck.x + 0.5f - posX) / xDiff;
+      float ty0 = (occupyCheck.y - 0.5f - posY) / yDiff;
+      float ty1 = (occupyCheck.y + 0.5f - posY) / yDiff;
 
       if (tx0 >= 0 && tx0 <= 1) {
         float yCheck = posY + tx0 * yDiff;
-        if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
+        if (yCheck >= occupyCheck.y - 0.5f && yCheck <= occupyCheck.y + 0.5f) {
           collisionDetected = true;
           break;
         }
       }
       if (tx1 >= 0 && tx1 <= 1) {
         float yCheck = posY + tx1 * yDiff;
-        if (yCheck >= occupyCheck->y - 0.5f && yCheck <= occupyCheck->y + 0.5f) {
+        if (yCheck >= occupyCheck.y - 0.5f && yCheck <= occupyCheck.y + 0.5f) {
           collisionDetected = true;
           break;
         }
       }
       if (ty0 >= 0 && ty0 <= 1) {
         float xCheck = posX + ty0 * xDiff;
-        if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
+        if (xCheck >= occupyCheck.x - 0.5f && xCheck <= occupyCheck.x + 0.5f) {
           collisionDetected = true;
           break;
         }
       }
       if (ty1 >= 0 && ty0 <= 1) {
         float xCheck = posX + ty1 * xDiff;
-        if (xCheck >= occupyCheck->x - 0.5f && xCheck <= occupyCheck->x + 0.5f) {
+        if (xCheck >= occupyCheck.x - 0.5f && xCheck <= occupyCheck.x + 0.5f) {
           collisionDetected = true;
           break;
         }
@@ -185,16 +187,16 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
 
     //If no collision detected then the destination cell is in line of sight from the drone's position.
     if (!collisionDetected) {
-      if (cave[dest->x][dest->y] == Free) {
-        freeCells.push_back(*dest);
+      if (cave[dest.x][dest.y] == Free) {
+        freeCells.push_back(dest);
       }
       else {
-        occupiedCells.push_back(*dest);
-        checkCells.push_back(*dest);
+        occupiedCells.push_back(dest);
+        checkCells.push_back(dest);
       }
     }
     else {
-      checkCells.push_back(*dest);
+      checkCells.push_back(dest);
     }
   }
 
@@ -205,18 +207,18 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
 void Drone::updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer) {
 
   //Adds all free cells to the internal map.
-  for (vector<SenseCell>::iterator freeCell = freeCellBuffer.begin(); freeCell != freeCellBuffer.end(); ++freeCell) {
-    int x = freeCell->x;
-    int y = freeCell->y;
+  for (auto const& freeCell : freeCellBuffer) {
+    int x = freeCell.x;
+    int y = freeCell.y;
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Free;
       freeCount++;
     }
   }
   //Adds all occupied cells to the internal map.
-  for (vector<SenseCell>::iterator occupyCell = occupiedCellBuffer.begin(); occupyCell != occupiedCellBuffer.end(); ++occupyCell) {
-    int x = occupyCell->x;
-    int y = occupyCell->y;
+  for (auto const& occupyCell : occupiedCellBuffer) {
+    int x = occupyCell.x;
+    int y = occupyCell.y;
     if (internalMap[x][y] == Unknown) {
       internalMap[x][y] = Occupied;
       occupiedCount++;
@@ -445,10 +447,20 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
 
     vector<Cell> pathA = searchAStar(startPos, midPos);
     vector<Cell> pathB = searchAStar(midPos, target.first);
+    cout << "A:1" << endl;
     reverse(pathA.begin(), pathA.end()); //Reverses path A.
+    cout << "A:2" << endl;
+    cout << pathB.size();
+    /*###for (auto const& a : pathB) {
+      cout << "(" << a.x << "," << a.y << ") ";
+    }*/
+    cout << endl;
     reverse(pathB.begin(), pathB.end()); //Reverses path B.
+    cout << "A:3" << endl;
     pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
+    cout << "A:4" << endl;
     pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
+    cout << "A:5" << endl;
     return pathA;
   }
 }
@@ -565,8 +577,7 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     if (topright) { neighbours.push_back(Cell(x+1,y+1)); }
 
     //Iterate over each neighbour.
-    for (vector<Cell>::iterator n = neighbours.begin(); n != neighbours.end(); ++n) {
-      Cell neighbour = *n;
+    for (auto const& neighbour : neighbours) {
       int neighbourI = cellToInt(neighbour);
 
       //Skip neighbour cell if it has previously been evaluated.
@@ -592,6 +603,9 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
 void Drone::process() {
 
+  //###
+  cout << "[" << name << "]" << endl;
+
   if (frontierCells.size() == 0) {
     complete = true;
     outputStatistics();
@@ -599,20 +613,27 @@ void Drone::process() {
   }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    cout << name << " A" << endl;
+    cout << name << "1.A" << endl;
     currentTarget = getBestFrontier();
-    cout << name << " B" << endl;
+    cout << name << "1.B" << endl;
     targetPath = getPathToTarget(currentTarget);
-    cout << name << " C" << endl;
+    cout << name << "1.C" << endl;
   }
   else {
+    cout << name << "2.A" << endl;
     setPosition(targetPath.front().x, targetPath.front().y);
+    cout << name << "2.B" << endl;
     targetPath.erase(targetPath.begin()); //Removes the first cell in the target path.
+    cout << name << "2.C" << endl;
   }
 
+  cout << name << "3.A" << endl;
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
+  cout << name << "3.B" << endl;
   updateInternalMap(buffers.first, buffers.second);
+  cout << name << "3.C" << endl;
   findFrontierCells(buffers.first, buffers.second);
+  cout << name << "3.D" << endl;
   recordConfiguration();
 }
 
