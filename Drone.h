@@ -40,6 +40,8 @@ private:
   pair<Cell,int> getBestFrontier();
   pair<Cell,int> getNearestFrontier();
   pair<Cell,int> getLatestFrontier();
+  float getDistToDrone(Cell dest);
+  float getDistToDrone(int x, int y);
   float getCellManhattanDist(Cell start, Cell end);
   float getCellEuclideanDist(Cell start, Cell end);
   Cell getClosestCell(float x, float y);

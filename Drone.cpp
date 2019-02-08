@@ -96,7 +96,7 @@ void Drone::init(float x, float y, string _name, int _frontierChoiceMethod) {
 //Sets the drone's current position in the cave.
 void Drone::setPosition(float x, float y) {
   //Adds the distance difference to the total distance travelled.
-  totalTravelled += pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
+  totalTravelled += getDistToDrone(x,y);
   //Calculates the bearing of the drone.
   bearing = atan2(x - posX,y - posY);
   //Sets the position.
@@ -117,7 +117,7 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
   for (size_t i = max(0, (int)floor(posX - searchRadius)); i <= min(caveWidth - 1, (int)ceil(posX + searchRadius)); i++) {
     for (size_t j = max(0, (int)floor(posY - searchRadius)); j <= min(caveHeight - 1, (int)ceil(posY + searchRadius)); j++) {
       //Allows only cells in the range.
-      float range = pow(pow(posX - (float)i, 2.0f) + pow(posY - (float)j, 2.0f), 0.5f);
+      float range = getDistToDrone((float)i, (float)j);
       if (range > searchRadius) { continue; }
       //Push the candidate cell onto the vector.
       candidates.push_back(SenseCell(i,j,range));
@@ -331,6 +331,7 @@ pair<Cell,int> Drone::getBestFrontier() {
   }
 }
 
+//###
 //Gets the latest frontier cell added to the frontier list. //###
 pair<Cell,int> Drone::getLatestFrontier() {
 
@@ -343,15 +344,29 @@ pair<Cell,int> Drone::getLatestFrontier() {
     }
   }
 
+  float bestDistance = numeric_limits<float>::max();
+  Cell bestFrontier;
+  int ts;
+
   //Gets all the frontiers which have the maximum timestep.
-  vector<pair<Cell,int>> latestFrontiers;
+  //vector<pair<Cell,int>> latestFrontiers;
   for(auto& frontier : frontierCells) {
     if (frontier.second == maxTimestep) {
-      latestFrontiers.push_back(make_pair(intToCell(frontier.first), maxTimestep));
+      Cell a = intToCell(frontier.first);
+      float dist = getDistToDrone(a);
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestFrontier = a;
+        ts = frontier.second;
+      }
+      //latestFrontiers.push_back(make_pair(intToCell(frontier.first), maxTimestep));
     }
   }
 
-  float bestBearing = numeric_limits<float>::max();
+  return make_pair(bestFrontier, ts);
+
+
+  /*float bestBearing = numeric_limits<float>::max();
   Cell bestFrontier;
   int ts;
 
@@ -369,9 +384,9 @@ pair<Cell,int> Drone::getLatestFrontier() {
       bestFrontier = cell.first;
       ts = cell.second;
     }
-  }
+  }*/
 
-  return make_pair(bestFrontier, ts);
+  //return make_pair(bestFrontier, ts);
 }
 
 //Gets the nearest frontier cell to the drone's current position.
@@ -384,7 +399,7 @@ pair<Cell,int> Drone::getNearestFrontier() {
   for(auto& frontier : frontierCells) {
     int y = (int)frontier.first / caveWidth;
     int x = frontier.first % caveWidth;
-    float dist = pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
+    float dist = getDistToDrone(x, y);
     if (dist < bestDist) {
       bestDist = dist;
       bestFrontier = Cell(x,y);
@@ -450,11 +465,7 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
     cout << "A:1" << endl;
     reverse(pathA.begin(), pathA.end()); //Reverses path A.
     cout << "A:2" << endl;
-    cout << pathB.size();
-    /*###for (auto const& a : pathB) {
-      cout << "(" << a.x << "," << a.y << ") ";
-    }*/
-    cout << endl;
+    cout << pathB.size() << endl;
     reverse(pathB.begin(), pathB.end()); //Reverses path B.
     cout << "A:3" << endl;
     pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
@@ -475,6 +486,16 @@ Cell Drone::intToCell(int src) {
   int y = (int)src / caveWidth;
   int x = src % caveWidth;
   return Cell(x,y);
+}
+
+//Gets the distance from a given cell to the drone's current position.
+float Drone::getDistToDrone(Cell dest) {
+  return pow(pow(dest.x - posX, 2.0f) + pow(dest.y - posY, 2.0f), 0.5f);
+}
+
+//Gets the distance from a given cell to the drone's current position.
+float Drone::getDistToDrone(int x, int y) {
+  return pow(pow(x - posX, 2.0f) + pow(y - posY, 2.0f), 0.5f);
 }
 
 //Gets the Manhattan distance between two cells in the cave.
@@ -513,6 +534,8 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     return single;
   }
 
+  //###cout << "&1" << endl;
+
   set<int> closedSet; //Set of evaluated cells.
   set<int> openSet; //Set of unevaluated cells.
   openSet.insert(cellToInt(start));
@@ -523,9 +546,12 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
   gScore[cellToInt(start)] = 0;
 
   map<int,float> fScore;
-  fScore[cellToInt(start)] = getCellManhattanDist(start, dest);
+  fScore[cellToInt(start)] = getCellManhattanDist(start, dest); //###???
+
+  //###cout << "&2" << endl;
 
   while (!openSet.empty()) {
+    //###cout << "&3" << endl;
     Cell current;
     float minScore = numeric_limits<float>::max();
 
@@ -537,6 +563,11 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
       }
     }
 
+    //###
+    //cout << "CURRENT: " << current.x << "," << current.y << endl;
+
+    //###cout << "&4" << endl;
+
     int currentI = cellToInt(current);
     if (current == dest) {
       return getAStarPath(previous, currentI);
@@ -545,6 +576,8 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     set<int>::iterator currentIt = openSet.find(currentI);
     openSet.erase(currentIt);
     closedSet.insert(currentI);
+
+    //###cout << "&5" << endl;
 
     //List of adjacent free/frontier cells to the current cell.
     vector<Cell> neighbours;
@@ -576,8 +609,11 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     //Top-Right Neighbour.
     if (topright) { neighbours.push_back(Cell(x+1,y+1)); }
 
+    //###cout << "&6" << endl;
+
     //Iterate over each neighbour.
     for (auto const& neighbour : neighbours) {
+      //###cout << "&7" << endl;
       int neighbourI = cellToInt(neighbour);
 
       //Skip neighbour cell if it has previously been evaluated.
