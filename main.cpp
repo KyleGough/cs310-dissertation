@@ -369,7 +369,9 @@ void pollCommunication() {
 				float dx = droneList[i].posX - droneList[j].posX;
 				float dy = droneList[i].posY - droneList[j].posY;
 				float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f));
-				if (dist < Drone::searchRange)
+				if (dist < Drone::searchRange) {
+
+				}
 			}
 		}
 	}
