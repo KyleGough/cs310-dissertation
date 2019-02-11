@@ -20,7 +20,6 @@
 #include "MapCell.h"
 using namespace std;
 
-
 //Cave Properties.
 const int caveWidth = 250; //Number of cells making the width of the cave.
 const int caveHeight = 180; //Number of cells making the height of the cave.
@@ -50,7 +49,6 @@ vector<Drone> droneList;
 int droneCount = 1;
 bool paused = true;
 
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Using a chance value, outputs true if a random value is smaller than the chance.
 bool thresholdRandom(int chance) {
@@ -115,8 +113,6 @@ void randomiseCave(float noiseOffsetX, float noiseOffsetY, float noiseScale, flo
 		}
 	}
 }
-
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Uses flood fill to target certain cells and modify cells in the temp and current cave accordingly.
 void floodFillReplace(int x, int y, int criteria, int currentTarget, int tempTarget) {
@@ -365,7 +361,29 @@ void generateRandomCave() {
 	generateCave(noiseOffsetX, noiseOffsetY, fillPercentage, noiseScale, smoothIt);
 }
 
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
+
+void pollCommunication() {
+	for (size_t i = 0; i < droneCount; i++) {
+		for (size_t j = 0; j < droneCount; j++) {
+			if (i != j) {
+				float dx = droneList[i].posX - droneList[j].posX;
+				float dy = droneList[i].posY - droneList[j].posY;
+				float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f));
+				if (dist < Drone::searchRange)
+			}
+		}
+	}
+
+
+
+
+
+}
+
+void pollGlobalCommunication() {
+	//Where all drones can communicate without being in view distance.
+}
+
 
 //Displays the camera mode in the bottom-left corner.
 void displayCameraMode(float* textColour) {
@@ -789,15 +807,13 @@ void renderCaveSmooth() {
 	glPopMatrix();
 }
 
-//###
+//Draws all the available drones onto the screen.
 void renderDrone() {
 	//Draws a drone at the starting location.
 	for (size_t i = 0; i < droneList.size(); i++) {
-		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRadius, droneList[i].name);
+		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRadius, droneList[i].name, droneList[i].bearing);
 	}
 }
-
-/*@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@~#~@*/
 
 //Positions the camera according to which drone it is following.
 void setCameraView() {
@@ -850,7 +866,7 @@ void drawDiscoveredCells() {
 
 void idle() {
 	if (!paused) {
-		usleep(2500); //2500 Microseconds.
+		usleep(250); //2500 Microseconds.
 		for (size_t i = 0; i < droneCount; i++) {
 			if (!droneList[i].complete) {
 				droneList[i].process();
@@ -862,12 +878,9 @@ void idle() {
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//###
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(cameraFOV, (GLdouble)glutGet(GLUT_WINDOW_WIDTH) / (GLdouble)glutGet(GLUT_WINDOW_HEIGHT), 0.1f, 250.0f);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -931,9 +944,7 @@ void keyboardInput(unsigned char key, int, int) {
 			generateRandomCave();
 			break;
 		//Pauses the simulation.
-		case ' ':
-			if (droneCount != -1) { paused = !paused; }
-			break;
+		case ' ': if (droneCount != -1) { paused = !paused; } break;
 		//Smoothing.
 		case 'T':
 		case 't': caveSmooth = !caveSmooth; break;
@@ -968,19 +979,23 @@ void specialKeyInput(int key, int x, int y) {
 		//Cave Generation Presets.
 		case GLUT_KEY_F1: //Jagged cave.
 			cout << "[Preset 1]" << endl;
-			generateCave(42435,6786,49,88,2);
+			generateCave(42435, 6786, 49, 88, 2);
 			break;
 		case GLUT_KEY_F2:
 			cout << "[Preset 2]" << endl;
+			generateCave(3312, 89324, 49, 53, 7);
 			break;
 		case GLUT_KEY_F3:
 			cout << "[Preset 3]" << endl;
+			generateCave(45666, 90748, 53, 34, 9);
 			break;
 		case GLUT_KEY_F4:
 			cout << "[Preset 4]" << endl;
+			generateCave(33229, 98110, 50, 43, 2);
 			break;
 		case GLUT_KEY_F5:
 			cout << "[Preset 5]" << endl;
+			generateCave(72507, 33137, 49, 56, 12);
 			break;
 	}
 	glutPostRedisplay();

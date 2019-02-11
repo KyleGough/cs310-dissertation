@@ -18,12 +18,13 @@
 #include "Drone.h"
 using namespace std;
 
-
+//Static Data Members.
 float Drone::searchRadius = 10.0f; //Range of localised search.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
 
+//Data Members.
 string name; //Name of the drone.
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
@@ -635,7 +636,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     }
   }
 }
-
 
 void Drone::process() {
 

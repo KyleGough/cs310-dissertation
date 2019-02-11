@@ -109,7 +109,7 @@ void Draw::drawText(int x, int y, float scale, const char* text, float* textColo
 }
 
 //Draws a drone at a given position.
-void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name) {
+void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name, float bearing) {
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
 	glColor4f(1.0f, 0.0f, 0.0f, 1.0f); //Red.
@@ -128,10 +128,28 @@ void Draw::drawDrone(float x, float y, float depth, float searchRadius, string n
 	glPopMatrix();
 
 	//Drone Object.
-	glBegin(GL_TRIANGLES);
-	glVertex3f(-0.2f, -0.2f, depth / 2.0f);
-	glVertex3f(0.2f, -0.2f, depth / 2.0f);
-	glVertex3f(0, 0.2f, depth / 2.0f);
+	const float gap = 0.15f;
+	glPushMatrix();
+	glTranslatef(-gap, -gap, 0.0f);
+	drawCircle(0.1f, 32, depth / 2.0f);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(gap, -gap, 0.0f);
+	drawCircle(0.1f, 32, depth / 2.0f);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(gap, gap, 0.0f);
+	drawCircle(0.1f, 32, depth / 2.0f);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(-gap, gap, 0.0f);
+	drawCircle(0.1f, 32, depth / 2.0f);
+	glPopMatrix();
+	glBegin(GL_POLYGON);
+	glVertex3f(0.10f, 0.10f, depth / 2.0f);
+	glVertex3f(-0.10f, 0.10f, depth / 2.0f);
+	glVertex3f(-0.10f, -0.10f, depth / 2.0f);
+	glVertex3f(0.10f, -0.10f, depth / 2.0f);
 	glEnd();
 
 	//Bounding Box.
@@ -182,13 +200,7 @@ void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
 	glBegin(GL_LINE_LOOP);
 
 	//Draws a segmented circle.
-	int segments = 32;
-	for (size_t i = 0; i < segments; i++) {
-		float angle = 2.0f * M_PI * float(i) / float(segments);
-		float x = searchRadius * cos(angle);
-		float y = searchRadius * sin(angle);
-		glVertex3f(x, y, depth);
-	}
+	drawCircle(searchRadius, 32, depth / 2.0f);
 
 	glEnd();
 	glDisable(GL_LINE_SMOOTH);
@@ -227,4 +239,16 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 			glPopMatrix();
 		}
 	}
+}
+
+//Draws a segmented circle.
+void Draw::drawCircle(float radius, size_t segments, float depth) {
+	glBegin(GL_LINE_LOOP);
+	for (size_t i = 0; i < segments; i++) {
+		float angle = 2.0f * M_PI * float(i) / float(segments);
+		float x = radius * cos(angle);
+		float y = radius * sin(angle);
+		glVertex3f(x, y, depth);
+	}
+	glEnd();
 }
