@@ -9,12 +9,14 @@ class Drone {
 public:
   //Data Members.
   static float searchRadius;
+  static float communicationRadius;
   string name;
   float posX;
   float posY;
   float bearing;
   bool complete;
   vector<vector<int>> internalMap;
+  vector<DroneConfig> pathList;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
   void init(float x, float y, string _name, int _frontierChoiceMethod);
@@ -26,7 +28,7 @@ public:
 private:
   //Data Members.
   map<int, int> frontierCells;
-  vector<DroneConfig> pathList;
+
   int currentTimestep;
   pair<Cell,int> currentTarget;
   vector<Cell> targetPath;

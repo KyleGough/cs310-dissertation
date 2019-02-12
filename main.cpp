@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <GL/glut.h>
 #include <iostream>
 #include <stdlib.h>
@@ -361,27 +363,30 @@ void generateRandomCave() {
 	generateCave(noiseOffsetX, noiseOffsetY, fillPercentage, noiseScale, smoothIt);
 }
 
-
+//###
 void pollCommunication() {
-	for (size_t i = 0; i < droneCount; i++) {
-		for (size_t j = 0; j < droneCount; j++) {
-			if (i != j) {
-				float dx = droneList[i].posX - droneList[j].posX;
-				float dy = droneList[i].posY - droneList[j].posY;
-				float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f));
-				if (dist < Drone::searchRange) {
 
-				}
+	//Skip polling communication if there arn't enough drones to communicate.
+	if (droneCount <= 1) { return; }
+
+	//For each unique pair of drones in communication range.
+	for (size_t i = 0; i < droneCount - 1; i++) {
+		for (size_t j = i+1; j < droneCount; j++) {
+			float dx = droneList[i].posX - droneList[j].posX;
+			float dy = droneList[i].posY - droneList[j].posY;
+			float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f), 0.5f);
+			if (dist < Drone::communicationRadius) {
+
 			}
 		}
 	}
-
-
-
-
-
 }
 
+//###
+//when communicating pause for some timesteps.
+//draw line between communicating drones.
+
+//###
 void pollGlobalCommunication() {
 	//Where all drones can communicate without being in view distance.
 }
@@ -866,6 +871,21 @@ void drawDiscoveredCells() {
 
 }
 
+//Draws the discovered cells of all drones in overview mode or one particular drone.
+void drawDronePath() {
+	//If there exists at least one drone.
+	if (droneCount != -1) {
+		if (cameraView != -1) { //Draws only the path of the drone being followed.
+ 			Draw::drawDronePath(droneList[cameraView].pathList, depth / 2.0f, 0.25f, colourMask[cameraView]);
+ 		}
+		else { //Draws all drone paths.
+			for (size_t i = 0; i < droneCount; i++) {
+				Draw::drawDronePath(droneList[i].pathList, depth / 2.0f, 0.25f, colourMask[i]);
+			}
+		}
+	}
+}
+
 void idle() {
 	if (!paused) {
 		usleep(250); //2500 Microseconds.
@@ -899,9 +919,13 @@ void display() {
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
+	//Draws discovered cells by the drones and their paths.
 	drawDiscoveredCells();
+	drawDronePath();
 
 	glPopMatrix();
+
+	//Displays control text on the screen.
 	displayControls();
 	glutSwapBuffers();
 }
@@ -963,6 +987,10 @@ void keyboardInput(unsigned char key, int, int) {
 		case '7':	droneCount = 7;	droneListInit(); break;
 		case '8':	droneCount = 8;	droneListInit(); break;
 		case '9':	droneCount = 9;	droneListInit(); break;
+		//DEBUG###
+		case 'e':
+			pollCommunication();
+			break;
 	}
 	glutPostRedisplay();
 }

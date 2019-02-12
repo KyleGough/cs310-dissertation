@@ -36,8 +36,21 @@ const Material globalMaterial = {
 };
 
 //Colours.
-float caveFaceColour[4] = {0.2f, 0.1f, 0.0f, 1.0f};
-float caveDepthColour[4] = {0.2f, 0.1f, 0.05f, 1.0f};
+const float caveFaceColour[4] = {0.2f, 0.1f, 0.0f, 1.0f};
+const float caveDepthColour[4] = {0.2f, 0.1f, 0.05f, 1.0f};
+
+//Drone Colour Masks.
+const float colourMask[9][4] = {
+	{1.0f, 0.0f, 0.0f},
+	{0.0f, 0.0f, 1.0f},
+	{0.0f, 1.0f, 0.0f},
+	{1.0f, 1.0f, 0.0f},
+	{0.0f, 1.0f, 1.0f},
+	{1.0f, 0.0f, 1.0f},
+	{0.33f, 0.33f, 1.0f},
+	{0.33f, 1.0f, 0.33f},
+	{1.0f, 0.33f, 0.33f}
+};
 
 //Sets the properties of a given material.
 void setMaterial(const Material& material) {

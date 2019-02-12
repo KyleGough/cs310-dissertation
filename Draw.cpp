@@ -1,11 +1,13 @@
 #define _USE_MATH_DEFINES
 #include <GL/glut.h>
 #include <string.h>
+#include <iostream>
 #include <cmath>
 #include <vector>
 #include <string>
 #include "MapCell.h"
 #include "Draw.h"
+#include "DroneConfig.h"
 using namespace std;
 
 //Draw Background.
@@ -251,4 +253,28 @@ void Draw::drawCircle(float radius, size_t segments, float depth) {
 		glVertex3f(x, y, depth);
 	}
 	glEnd();
+}
+
+//Draws a coloured path of the drone's previous positions.
+void Draw::drawDronePath(vector<DroneConfig> pathList, float depth, float radius, const float mask[3]) {
+
+	size_t size = pathList.size(); //Number of configurations.
+	glDisable(GL_LIGHTING);
+
+	//For each previous configuration.
+	for (auto& config : pathList) {
+		glPushMatrix();
+		float intensity = config.timestep / (float)size; //Intensity based on timestep.
+		glColor4f(intensity * mask[0], intensity * mask[1], intensity * mask[2], 0.75f); //Apply colour mask to intensity.
+		glTranslatef(config.x, config.y, 0.0f);
+		glBegin(GL_QUADS);
+		glVertex3f(radius, radius, depth);
+		glVertex3f(-radius, radius, depth);
+		glVertex3f(-radius, -radius, depth);
+		glVertex3f(radius, -radius, depth);
+		glEnd();
+		glPopMatrix();
+	}
+
+	glEnable(GL_LIGHTING);
 }

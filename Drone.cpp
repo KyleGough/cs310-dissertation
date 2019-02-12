@@ -20,6 +20,7 @@ using namespace std;
 
 //Static Data Members.
 float Drone::searchRadius = 10.0f; //Range of localised search.
+float Drone::communicationRadius = 25.0f; //Range of inter-drone communication.
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
