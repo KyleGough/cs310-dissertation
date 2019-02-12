@@ -464,16 +464,16 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
 
     vector<Cell> pathA = searchAStar(startPos, midPos);
     vector<Cell> pathB = searchAStar(midPos, target.first);
-    cout << "A:1" << endl;
+    //###cout << "A:1" << endl;
     reverse(pathA.begin(), pathA.end()); //Reverses path A.
-    cout << "A:2" << endl;
-    cout << pathB.size() << endl;
+    //###cout << "A:2" << endl;
+    //###cout << pathB.size() << endl;
     reverse(pathB.begin(), pathB.end()); //Reverses path B.
-    cout << "A:3" << endl;
+    //###cout << "A:3" << endl;
     pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
-    cout << "A:4" << endl;
+    //###cout << "A:4" << endl;
     pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
-    cout << "A:5" << endl;
+    //###cout << "A:5" << endl;
     return pathA;
   }
 }
@@ -526,7 +526,7 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
   //###
-  cout << start.x << "," << start.y << " - " << dest.x << "," << dest.y << endl;
+  //###cout << start.x << "," << start.y << " - " << dest.x << "," << dest.y << endl;
 
 
   //If start cell is the same as the destination.
@@ -536,7 +536,7 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     return single;
   }
 
-  //###cout << "&1" << endl;
+  //###//###cout << "&1" << endl;
 
   set<int> closedSet; //Set of evaluated cells.
   set<int> openSet; //Set of unevaluated cells.
@@ -550,10 +550,10 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
   map<int,float> fScore;
   fScore[cellToInt(start)] = getCellManhattanDist(start, dest); //###???
 
-  //###cout << "&2" << endl;
+  //###//###cout << "&2" << endl;
 
   while (!openSet.empty()) {
-    //###cout << "&3" << endl;
+    //###//###cout << "&3" << endl;
     Cell current;
     float minScore = numeric_limits<float>::max();
 
@@ -566,9 +566,9 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     }
 
     //###
-    //cout << "CURRENT: " << current.x << "," << current.y << endl;
+    ////###cout << "CURRENT: " << current.x << "," << current.y << endl;
 
-    //###cout << "&4" << endl;
+    //###//###cout << "&4" << endl;
 
     int currentI = cellToInt(current);
     if (current == dest) {
@@ -579,7 +579,7 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     openSet.erase(currentIt);
     closedSet.insert(currentI);
 
-    //###cout << "&5" << endl;
+    //###//###cout << "&5" << endl;
 
     //List of adjacent free/frontier cells to the current cell.
     vector<Cell> neighbours;
@@ -611,11 +611,11 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     //Top-Right Neighbour.
     if (topright) { neighbours.push_back(Cell(x+1,y+1)); }
 
-    //###cout << "&6" << endl;
+    //###//###cout << "&6" << endl;
 
     //Iterate over each neighbour.
     for (auto const& neighbour : neighbours) {
-      //###cout << "&7" << endl;
+      //###//###cout << "&7" << endl;
       int neighbourI = cellToInt(neighbour);
 
       //Skip neighbour cell if it has previously been evaluated.
@@ -641,7 +641,7 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 void Drone::process() {
 
   //###
-  cout << "[" << name << "]" << endl;
+  //###cout << "[" << name << "]" << endl;
 
   if (frontierCells.size() == 0) {
     complete = true;
@@ -650,36 +650,37 @@ void Drone::process() {
   }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    cout << name << "1.A" << endl;
+    //###cout << name << "1.A" << endl;
     currentTarget = getBestFrontier();
-    cout << name << "1.B" << endl;
+    //###cout << name << "1.B" << endl;
     targetPath = getPathToTarget(currentTarget);
-    cout << name << "1.C" << endl;
+    //###cout << name << "1.C" << endl;
   }
   else {
-    cout << name << "2.A" << endl;
+    //###cout << name << "2.A" << endl;
     setPosition(targetPath.front().x, targetPath.front().y);
-    cout << name << "2.B" << endl;
+    //###cout << name << "2.B" << endl;
     targetPath.erase(targetPath.begin()); //Removes the first cell in the target path.
-    cout << name << "2.C" << endl;
+    //###cout << name << "2.C" << endl;
   }
 
-  cout << name << "3.A" << endl;
+  //###cout << name << "3.A" << endl;
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
-  cout << name << "3.B" << endl;
+  //###cout << name << "3.B" << endl;
   updateInternalMap(buffers.first, buffers.second);
-  cout << name << "3.C" << endl;
+  //###cout << name << "3.C" << endl;
   findFrontierCells(buffers.first, buffers.second);
-  cout << name << "3.D" << endl;
+  //###cout << name << "3.D" << endl;
   recordConfiguration();
 }
 
 //Outputs drone statistics to the console.
 void Drone::outputStatistics() {
-  cout << "[" << name << "] - Search Complete." << endl;
-  cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
-  cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
+  //###cout << "[" << name << "] - Search Complete." << endl;
+  //###cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
+  //###cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
 }
 
+//###
 //If drone-to-drone collision avoidance becomes too tough.
 //Allow them to pass through each other, saying they take different altitudes.

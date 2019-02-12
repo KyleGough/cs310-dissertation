@@ -2,6 +2,7 @@
 #include <vector>
 #include "SenseCell.h"
 #include "DroneConfig.h"
+#include "Cell.h" //###
 using namespace std;
 
 class Draw {
@@ -12,6 +13,7 @@ public:
   static void drawDrone(float x, float y, float depth, float searchRadius, string name, float bearing);
   static void drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave, float colours[][4]);
   static void drawDronePath(vector<DroneConfig> pathList, float depth, float radius, const float mask[3]);
+  static void drawCommunication(vector<Cell> cellList, float radius, float depth);
 private:
   static void drawDroneBoundingBox(float depth);
   static void drawDroneSearchingRange(float searchRadius, float depth);

@@ -8,6 +8,7 @@
 #include "MapCell.h"
 #include "Draw.h"
 #include "DroneConfig.h"
+#include "Cell.h" //###
 using namespace std;
 
 //Draw Background.
@@ -240,6 +241,22 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 			glEnd();
 			glPopMatrix();
 		}
+	}
+}
+
+//Draws a coloured path depicting communicatio between two drones.
+void Draw::drawCommunication(vector<Cell> cellList, float radius, float depth) {
+
+	for (auto& cell : cellList) {
+		glPushMatrix();
+		glTranslatef(cell.x, cell.y, 0.0f);
+		glBegin(GL_QUADS);
+		glVertex3f(radius, radius, depth);
+		glVertex3f(-radius, radius, depth);
+		glVertex3f(-radius, -radius, depth);
+		glVertex3f(radius, -radius, depth);
+		glEnd();
+		glPopMatrix();
 	}
 }
 

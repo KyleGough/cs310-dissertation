@@ -53,6 +53,7 @@ bool paused = true;
 
 //Controls.
 bool ctrlHidden = false;
+vector<Cell> debug; //###
 
 
 //Using a chance value, outputs true if a random value is smaller than the chance.
@@ -367,19 +368,72 @@ void generateRandomCave() {
 }
 
 //###
-void pollCommunication() {
+bool lineOfSightCheck(int ax, int ay, int bx, int by) {
+
+	debug.clear(); //###
+
+	//Two points have the same x value.
+	if (ax == bx) {
+		for (size_t i = min(ay,by); i <= max(ay,by); i++) {
+			if (currentCave[ax][i] == Occupied) { return false; }
+		}
+	}
+	//Two points have the same y value.
+	else if (ay == by) {
+		for (size_t j = min(ax,bx); j <= max(ax,bx); j++) {
+			if (currentCave[j][ay] == Occupied) { return false; }
+		}
+	}
+	//Two points are not alligned by either axis.
+	else {
+		for (size_t x = min(ax,bx); x <= max(ax,bx); x++) {
+			float t0 = (x - 0.5f - ax) / (bx - ax);
+			float t1 = (x + 0.5f - ax) / (bx - ax);
+			float y0 = ay + (t0 * (by - ay));
+			float y1 = ay + (t1 * (by - ay));
+			float ymin = floor(min(y0,y1));
+			float ymax = ceil(max(y0,y1));
+			for (size_t y = ymin; y <= ymax; y++) {
+				debug.push_back(Cell(x,y));
+				//###if (currentCave[x][y] == Occupied) { return false; }
+			}
+			//###cout << "(" << x << "," << ymin << ") to (" << x << "," << ymax << ")" << endl;
+		}
+	}
+
+	return true;
+}
+
+
+void poll(int a, int b) {
+	cout << "Poll: " << droneList[a].name << " and " << droneList[b].name << endl;
+}
+
+//###
+void pollLocalCommunication() {
 
 	//Skip polling communication if there arn't enough drones to communicate.
 	if (droneCount <= 1) { return; }
 
 	//For each unique pair of drones in communication range.
 	for (size_t i = 0; i < droneCount - 1; i++) {
-		for (size_t j = i+1; j < droneCount; j++) {
+		for (size_t j = i + 1; j < droneCount; j++) {
 			float dx = droneList[i].posX - droneList[j].posX;
 			float dy = droneList[i].posY - droneList[j].posY;
 			float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f), 0.5f);
-			if (dist < Drone::communicationRadius) {
-
+			//If distance is small then there can be no obstructions.
+			if (dist <= 1) {
+				poll(i,j);
+			}
+			else if (dist < Drone::communicationRadius) {
+				int ix = (int)droneList[i].posX;
+				int iy = (int)droneList[i].posY;
+				int jx = (int)droneList[j].posX;
+				int jy = (int)droneList[j].posY;
+				//Checks that there are no obstructions in the path from drone I to J.
+				if (lineOfSightCheck(ix, iy, jx, jy)) {
+					poll(i ,j);
+				}
 			}
 		}
 	}
@@ -902,6 +956,7 @@ void idle() {
 				droneList[i].process();
 			}
 		}
+		pollLocalCommunication(); //###
 		glutPostRedisplay();
 	}
 }
@@ -931,6 +986,8 @@ void display() {
 	//Draws discovered cells by the drones and their paths.
 	drawDiscoveredCells();
 	drawDronePath();
+
+	Draw::drawCommunication(debug, 0.5f, 0.05f); //###
 
 	//Dark translucent overlay onto cave to make controls mode visible.
 	if (!ctrlHidden) {
@@ -1019,7 +1076,7 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'H': ctrlHidden = !ctrlHidden; break;
 		//DEBUG###
 		case 'e':
-			pollCommunication();
+			pollLocalCommunication();
 			break;
 	}
 	glutPostRedisplay();
