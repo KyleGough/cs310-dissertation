@@ -88,7 +88,7 @@ void Draw::drawBorder(float depth, float caveWidth, float caveHeight) {
 }
 
 //Draws text onto the screen with a given colour at a given position and scale.
-void Draw::drawText(int x, int y, float scale, const char* text, float* textColour) {
+void Draw::drawText(int x, int y, float scale, const char* text, const float* textColour) {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();

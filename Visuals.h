@@ -38,6 +38,7 @@ const Material globalMaterial = {
 //Colours.
 const float caveFaceColour[4] = {0.2f, 0.1f, 0.0f, 1.0f};
 const float caveDepthColour[4] = {0.2f, 0.1f, 0.05f, 1.0f};
+const float textColour[3] = {1.0f, 1.0f, 1.0f};
 
 //Drone Colour Masks.
 const float colourMask[9][4] = {

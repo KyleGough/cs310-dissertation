@@ -51,6 +51,9 @@ vector<Drone> droneList;
 int droneCount = 1;
 bool paused = true;
 
+//Controls.
+bool ctrlHidden = false;
+
 
 //Using a chance value, outputs true if a random value is smaller than the chance.
 bool thresholdRandom(int chance) {
@@ -393,7 +396,7 @@ void pollGlobalCommunication() {
 
 
 //Displays the camera mode in the bottom-left corner.
-void displayCameraMode(float* textColour) {
+void displayCameraMode(const float* textColour) {
 	//Overview.
 	if (cameraView == -1) {
 		Draw::drawText(30, 30, 0.15f, (char *)"Overview", textColour);
@@ -406,14 +409,19 @@ void displayCameraMode(float* textColour) {
 
 //Displays the control text at the top-left of the window.
 void displayControls() {
-	float textColour[3] = {1.0f, 1.0f, 1.0f};
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, 0.15f, (char *)"Controls:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, 0.15f, (char *)"'q' - Quit", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 90, 0.15f, (char *)"'['/']' - Zoom In/Out:", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 120, 0.15f, (char *)"'r' - Generate Cave", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 150, 0.15f, (char *)"'t' - Toggle Smooth Cells.", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 180, 0.15f, (char *)"'v' - Change Camera View.", textColour);
-	Draw::drawText(10, glutGet(GLUT_WINDOW_HEIGHT) - 210, 0.15f, (char *)"' ' - Resume/Pause Simulation.", textColour);
+
+	int leftPad = glutGet(GLUT_WINDOW_WIDTH) / 2 - 200;
+	int topPad = glutGet(GLUT_WINDOW_HEIGHT) - 100;
+	Draw::drawText(glutGet(GLUT_WINDOW_WIDTH) / 2 - 55, topPad, 0.25f, (char *)"Controls", textColour);
+	Draw::drawText(leftPad, topPad - 100, 0.15f, (char *)"q - Quit", textColour);
+	Draw::drawText(leftPad, topPad - 150, 0.15f, (char *)"[ - Zoom In", textColour);
+	Draw::drawText(leftPad, topPad - 200, 0.15f, (char *)"] - Zoom Out", textColour);
+	Draw::drawText(leftPad, topPad - 250, 0.15f, (char *)"Scroll - Zoom", textColour);
+	Draw::drawText(leftPad, topPad - 300, 0.15f, (char *)"r - Generate Cave", textColour);
+	Draw::drawText(leftPad, topPad - 350, 0.15f, (char *)"t - Toggle Smooth Cells.", textColour);
+	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"v - Change Camera View.", textColour);
+	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
+	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"H - Show/Hide Controls", textColour);
 	displayCameraMode(textColour);
 }
 
@@ -915,6 +923,7 @@ void display() {
 	setLight(globalLight);
 	glEnable(GL_LIGHTING);
 
+
 	//Draws Cave Background then Border then finally the cave structure.
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
@@ -923,10 +932,28 @@ void display() {
 	drawDiscoveredCells();
 	drawDronePath();
 
+	//Dark translucent overlay onto cave to make controls mode visible.
+	if (!ctrlHidden) {
+		const float l = 1000.0f;
+		glColor4f(0.0f, 0.0f, 0.0f, 0.90f);
+		glBegin(GL_QUADS);
+		glVertex3f(l,l,1.0f);
+		glVertex3f(-l,l,1.0f);
+		glVertex3f(-l,-l,1.0f);
+		glVertex3f(l,-l,1.0f);
+		glEnd();
+	}
+
 	glPopMatrix();
 
 	//Displays control text on the screen.
-	displayControls();
+	if (ctrlHidden) {
+		displayCameraMode(textColour);
+	}
+	else { //Display control screen.
+		displayControls();
+	}
+
 	glutSwapBuffers();
 }
 
@@ -987,6 +1014,9 @@ void keyboardInput(unsigned char key, int, int) {
 		case '7':	droneCount = 7;	droneListInit(); break;
 		case '8':	droneCount = 8;	droneListInit(); break;
 		case '9':	droneCount = 9;	droneListInit(); break;
+		//Show/Hide Controls.
+		case 'h':
+		case 'H': ctrlHidden = !ctrlHidden; break;
 		//DEBUG###
 		case 'e':
 			pollCommunication();
@@ -999,13 +1029,25 @@ void keyboardInput(unsigned char key, int, int) {
 void specialKeyInput(int key, int x, int y) {
 	switch (key) {
 		//Pan Up.
-		case GLUT_KEY_UP: cameraPanY += 0.2f * cameraFOV; break;
+		case GLUT_KEY_UP:
+			cameraPanY += 0.2f * cameraFOV;
+			if (cameraPanY > caveHeight + 50.0f) { cameraPanY = caveHeight + 50.0f; }
+			break;
 		//Pan Down.
-		case GLUT_KEY_DOWN: cameraPanY -= 0.2f * cameraFOV; break;
+		case GLUT_KEY_DOWN:
+			cameraPanY -= 0.2f * cameraFOV;
+			if (cameraPanY < -50.0f) { cameraPanY = -50.0f; }
+			break;
 		//Pan Left.
-		case GLUT_KEY_LEFT: cameraPanX -= 0.2f * cameraFOV; break;
+		case GLUT_KEY_LEFT:
+			cameraPanX -= 0.2f * cameraFOV;
+			if (cameraPanX < -50.0f) { cameraPanX = -50.0f; }
+			break;
 		//Pan Right.
-		case GLUT_KEY_RIGHT: cameraPanX += 0.2f * cameraFOV; break;
+		case GLUT_KEY_RIGHT:
+			cameraPanX += 0.2f * cameraFOV;
+			if (cameraPanX > caveWidth + 50.0f) { cameraPanX = caveWidth + 50.0f; }
+			break;
 		//Cave Generation Presets.
 		case GLUT_KEY_F1: //Jagged cave.
 			cout << "[Preset 1]" << endl;
