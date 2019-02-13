@@ -27,7 +27,7 @@ public:
   vector<Cell> getPathToTarget(pair<Cell,int> target);
   void process();
   bool allowCommunication(int x);
-  void combineMaps(vector<vector<int>> targetMap);
+  void combineMaps(vector<vector<int>> referenceMap);
 private:
   //Data Members.
   map<int, int> frontierCells;

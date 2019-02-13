@@ -697,18 +697,18 @@ bool Drone::allowCommunication(int x) {
 }
 
 
-void Drone::combineMaps(vector<vector<int>> targetMap) {
+void Drone::combineMaps(vector<vector<int>> referenceMap) {
 
   vector<Cell> frontierCheck; //List of cells to check if they are frontiers.
-  cout << "Combine" << endl; //###
 
+  //Updates internal map with the given reference map.
   for (size_t i = 0; i < caveWidth; i++) {
     for (size_t j = 0; j < caveHeight; j++) {
 
-      if (targetMap[i][j] == Unknown) {
+      if (referenceMap[i][j] == Unknown) {
         continue;
       }
-      else if (targetMap[i][j] == Occupied && internalMap[i][j] == Unknown) {
+      else if (referenceMap[i][j] == Occupied && internalMap[i][j] == Unknown) {
         //Update unknown cell to occupied.
         internalMap[i][j] = Occupied;
         occupiedCount++;
@@ -719,7 +719,7 @@ void Drone::combineMaps(vector<vector<int>> targetMap) {
         if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
         if (j + 1 < caveHeight && internalMap[i][j+1] == Frontier) { frontierCheck.push_back(Cell(i,j+1)); }
       }
-      else if (targetMap[i][j] == Free && internalMap[i][j] != Free) {
+      else if (referenceMap[i][j] == Free && internalMap[i][j] != Free) {
         //Update free cell.
         if (internalMap[i][j] == Unknown) {
           freeCount++;
@@ -731,17 +731,51 @@ void Drone::combineMaps(vector<vector<int>> targetMap) {
         internalMap[i][j] == Free;
         frontierCheck.push_back(Cell(i,j));
       }
-      else if (targetMap[i][j] == Frontier && internalMap[i][j] != Free) {
+      else if (referenceMap[i][j] == Frontier && internalMap[i][j] != Free) {
         //Update frontier cell.
         if (internalMap[i][j] == Unknown) {
           freeCount++;
           commFreeCount++;
-        }        
+        }
+        else if (internalMap[i][j] == Frontier) { //###option for free as well.
+          frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
+        }
         internalMap[i][j] == Free;
         frontierCheck.push_back(Cell(i,j));
       }
     }
   }
+
+  //Checks each cell in the frontier check vector to see if it is a frontier.
+  for (auto& cell : frontierCheck) {
+    int x = cell.x;
+    int y = cell.y;
+    int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
+
+    if (x - 1 > 0 && internalMap[x-1][y] == Unknown) {
+      internalMap[x][y] = Frontier;
+      frontierCells[i] = currentTimestep;
+      continue;
+    }
+    if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
+      internalMap[x][y] = Frontier;
+      frontierCells[i] = currentTimestep;
+      continue;
+    }
+    if (y - 1 > 0 && internalMap[x][y-1] == Unknown) {
+      internalMap[x][y] = Frontier;
+      frontierCells[i] = currentTimestep;
+      continue;
+    }
+    if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
+      internalMap[x][y] = Frontier;
+      frontierCells[i] = currentTimestep;
+      continue;
+    }
+
+  }
+
+
 
 }
 
