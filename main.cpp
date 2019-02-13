@@ -391,13 +391,12 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 			float t1 = (x + 0.5f - ax) / (bx - ax);
 			float y0 = ay + (t0 * (by - ay));
 			float y1 = ay + (t1 * (by - ay));
-			float ymin = floor(min(y0,y1));
-			float ymax = ceil(max(y0,y1));
+			float ymin = max((int)floor(floor((min(y0,y1) * 2.0f) + 0.5f) / 2.0f), min(ay,by));
+			float ymax = min((int)ceil(floor((max(y0,y1) * 2.0f) + 0.5f) / 2.0f), max(ay,by));
 			for (size_t y = ymin; y <= ymax; y++) {
 				debug.push_back(Cell(x,y));
-				//###if (currentCave[x][y] == Occupied) { return false; }
+				if (currentCave[x][y] == Occupied) { return false; }
 			}
-			//###cout << "(" << x << "," << ymin << ") to (" << x << "," << ymax << ")" << endl;
 		}
 	}
 
@@ -406,7 +405,16 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 
 
 void poll(int a, int b) {
-	cout << "Poll: " << droneList[a].name << " and " << droneList[b].name << endl;
+
+
+	//Check to see if enough time has elapsed between communications with drones a and b.
+	if (droneList[a].allowCommunication(b)) {
+		cout << "Poll: " << droneList[a].name << " and " << droneList[b].name << endl;
+		droneList[a].combineMaps(droneList[b].internalMap);
+	}
+
+
+
 }
 
 //###
@@ -905,7 +913,7 @@ void droneListInit() {
 	int droneMethod[9] = {1,0,0,1,0,1,0,1,0}; //###frontier selection, for debug atm.
 	for (size_t i = 0; i < droneCount; i++) {
 		Drone newDrone;
-		newDrone.init(startCell.x, startCell.y, droneNames[i], droneMethod[i]);
+		newDrone.init(startCell.x, startCell.y, droneNames[i], droneMethod[i], droneCount);
 		droneList.push_back(newDrone);
 	}
 }
@@ -1077,6 +1085,7 @@ void keyboardInput(unsigned char key, int, int) {
 		//DEBUG###
 		case 'e':
 			pollLocalCommunication();
+			cout << round(-1.5) << endl; //###
 			break;
 	}
 	glutPostRedisplay();

@@ -21,6 +21,8 @@ using namespace std;
 //Static Data Members.
 float Drone::searchRadius = 10.0f; //Range of localised search.
 float Drone::communicationRadius = 25.0f; //Range of inter-drone communication.
+int Drone::communicationTimeBuffer = 10; //Minimum number of timesteps required between communication.
+
 static int caveWidth;
 static int caveHeight;
 static vector<vector<int>> cave;
@@ -38,11 +40,14 @@ vector<DroneConfig> pathList; //List of drone configurations for each timestep.
 int currentTimestep; //Current timestep used to mark when frontiers were last identified.
 pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep in which it was identified.
 vector<Cell> targetPath; //List of cells that head towards the current target.
+vector<int> lastCommunication; //List of timesteps when last communicated with other drones.
 
 //Statistics.
 float totalTravelled; //Total distance travelled.
 int freeCount; //Number of free cells identified.
 int occupiedCount; //Number of occupied cells identified.
+int commFreeCount; //Number of free cells recieved from inter-drone communication.
+int commOccupiedCount; //Number of occupied cells recieved from inter-drone communication.
 
 
 //Less than comparison function for two SenseCell objects.
@@ -58,7 +63,7 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 }
 
 //Initalises the drone's starting position, name and internal map.
-void Drone::init(float x, float y, string _name, int _frontierChoiceMethod) {
+void Drone::init(float x, float y, string _name, int _frontierChoiceMethod, int droneCount) {
   //Set given parameters.
   posX = x;
   posY = y;
@@ -75,6 +80,11 @@ void Drone::init(float x, float y, string _name, int _frontierChoiceMethod) {
   pathList.clear();
   targetPath.clear();
   currentTarget = make_pair(Cell(-1,-1), -1); //Unreachable default target.
+
+  //Last communication between drones.
+  for (size_t i = 0; i < droneCount; i++) {
+    lastCommunication.push_back(0);
+  }
 
   //Sets the internal map to all unknowns.
   internalMap.clear();
@@ -680,6 +690,62 @@ void Drone::outputStatistics() {
   //###cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
   //###cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
 }
+
+//Check to see if enough time has elapsed to allow inter-drone communication.
+bool Drone::allowCommunication(int x) {
+  return (currentTimestep >= lastCommunication[x] + communicationTimeBuffer);
+}
+
+
+void Drone::combineMaps(vector<vector<int>> targetMap) {
+
+  vector<Cell> frontierCheck; //List of cells to check if they are frontiers.
+  cout << "Combine" << endl; //###
+
+  for (size_t i = 0; i < caveWidth; i++) {
+    for (size_t j = 0; j < caveHeight; j++) {
+
+      if (targetMap[i][j] == Unknown) {
+        continue;
+      }
+      else if (targetMap[i][j] == Occupied && internalMap[i][j] == Unknown) {
+        //Update unknown cell to occupied.
+        internalMap[i][j] = Occupied;
+        occupiedCount++;
+        commOccupiedCount++;
+        //Adds the neighbouring cells to the lsit to be checked.
+        if (i - 1 >= 0 && internalMap[i-1][j] == Frontier) { frontierCheck.push_back(Cell(i-1,j)); }
+        if (i + 1 < caveWidth && internalMap[i+1][j] == Frontier) { frontierCheck.push_back(Cell(i+1,j)); }
+        if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
+        if (j + 1 < caveHeight && internalMap[i][j+1] == Frontier) { frontierCheck.push_back(Cell(i,j+1)); }
+      }
+      else if (targetMap[i][j] == Free && internalMap[i][j] != Free) {
+        //Update free cell.
+        if (internalMap[i][j] == Unknown) {
+          freeCount++;
+          commFreeCount++;
+        }
+        else if (internalMap[i][j] == Frontier) {
+          frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
+        }
+        internalMap[i][j] == Free;
+        frontierCheck.push_back(Cell(i,j));
+      }
+      else if (targetMap[i][j] == Frontier && internalMap[i][j] != Free) {
+        //Update frontier cell.
+        if (internalMap[i][j] == Unknown) {
+          freeCount++;
+          commFreeCount++;
+        }        
+        internalMap[i][j] == Free;
+        frontierCheck.push_back(Cell(i,j));
+      }
+    }
+  }
+
+}
+
+
 
 //###
 //If drone-to-drone collision avoidance becomes too tough.
