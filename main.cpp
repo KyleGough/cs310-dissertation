@@ -38,6 +38,7 @@ const float depth = -1.0f;
 int currentCave[caveWidth][caveHeight];
 int tempCave[caveWidth][caveHeight];
 Cell startCell;
+vector<string> caveStats;
 
 //Camera.
 float cameraPanX = 125.0f; //Camera translation along the x-axis.
@@ -53,7 +54,7 @@ bool paused = true;
 
 //Controls.
 bool ctrlHidden = false;
-vector<Cell> debug; //###
+vector<Cell> communicationSightLine; //Cells to draw to show communication between drones.
 
 
 //Using a chance value, outputs true if a random value is smaller than the chance.
@@ -307,6 +308,14 @@ void removeNonBorderOccupiedAreas() {
 //Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
 void generateCave(float noiseOffsetX, float noiseOffsetY, float fillPercentage, float noiseScale, float smoothIt) {
 
+	//Updates Cave Statistics vector.
+	caveStats.clear();
+	caveStats.push_back(to_string((int)noiseOffsetX));
+	caveStats.push_back(to_string((int)noiseOffsetY));
+	caveStats.push_back(to_string((int)fillPercentage));
+	caveStats.push_back(to_string((int)noiseScale));
+	caveStats.push_back(to_string((int)smoothIt));
+
 	droneCount = -1;
 	cameraView = -1;
 	paused = true;
@@ -370,7 +379,7 @@ void generateRandomCave() {
 //###
 bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 
-	debug.clear(); //###
+	communicationSightLine.clear();
 
 	//Two points have the same x value.
 	if (ax == bx) {
@@ -394,7 +403,7 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 			float ymin = max((int)floor(floor((min(y0,y1) * 2.0f) + 0.5f) / 2.0f), min(ay,by));
 			float ymax = min((int)ceil(floor((max(y0,y1) * 2.0f) + 0.5f) / 2.0f), max(ay,by));
 			for (size_t y = ymin; y <= ymax; y++) {
-				debug.push_back(Cell(x,y));
+				communicationSightLine.push_back(Cell(x,y));
 				if (currentCave[x][y] == Occupied) { return false; }
 			}
 		}
@@ -403,21 +412,17 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 	return true;
 }
 
-
-void poll(int a, int b) {
-
-
+//If enough time has elapsed between last communication then the interla maps of the drones are combined.
+void communicate(int a, int b) {
 	//Check to see if enough time has elapsed between communications with drones a and b.
 	if (droneList[a].allowCommunication(b)) {
-		cout << "Poll: " << droneList[a].name << " and " << droneList[b].name << endl;
-		droneList[a].combineMaps(droneList[b].internalMap);
+		droneList[a].combineMaps(droneList[b].internalMap, b);
+		droneList[b].combineMaps(droneList[a].internalMap, a);
 	}
-
-
-
 }
 
-//###
+//Checks all drones if they are in communication distance and can view each other with no obstruction.
+//If two drones satisfy these conditions they communicate their internal maps.
 void pollLocalCommunication() {
 
 	//Skip polling communication if there arn't enough drones to communicate.
@@ -431,7 +436,7 @@ void pollLocalCommunication() {
 			float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f), 0.5f);
 			//If distance is small then there can be no obstructions.
 			if (dist <= 1) {
-				poll(i,j);
+				communicate(i,j);
 			}
 			else if (dist < Drone::communicationRadius) {
 				int ix = (int)droneList[i].posX;
@@ -440,7 +445,7 @@ void pollLocalCommunication() {
 				int jy = (int)droneList[j].posY;
 				//Checks that there are no obstructions in the path from drone I to J.
 				if (lineOfSightCheck(ix, iy, jx, jy)) {
-					poll(i ,j);
+					communicate(i ,j);
 				}
 			}
 		}
@@ -448,24 +453,61 @@ void pollLocalCommunication() {
 }
 
 //###
-//when communicating pause for some timesteps.
-//draw line between communicating drones.
-
-//###
+//All drones can communicate without being in view distance of each other.
 void pollGlobalCommunication() {
-	//Where all drones can communicate without being in view distance.
+
+	//Skip polling communication if there arn't enough drones to communicate.
+	if (droneCount <= 1) { return; }
+
+	//For each unique pair of drones in communication range.
+	for (size_t i = 0; i < droneCount - 1; i++) {
+		for (size_t j = i + 1; j < droneCount; j++) {
+			communicate(i,j);
+		}
+	}
 }
 
+//Displays the camera mode in the bottom-left corner as well as other useful statistics.
+void displayStatistics(const float* textColour) {
 
-//Displays the camera mode in the bottom-left corner.
-void displayCameraMode(const float* textColour) {
+	//Text parameters.
+	const int yPad = 20;
+	const int xPad = 30;
+	const int segments = 6;
+	const int windowW = glutGet(GLUT_WINDOW_WIDTH) - (2 * xPad);
+	const int windowH = glutGet(GLUT_WINDOW_HEIGHT) - (2 * yPad);
+	const float statSize = 0.13f;
+	const float textSize = 0.11f;
+
+	//Statistics.
+	Draw::drawText(xPad, windowH, statSize, ("x Offset " + caveStats[0]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - yPad, statSize, ("Y Offset " + caveStats[1]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 2), statSize, ("Fill Percentage " + caveStats[2]).c_str(),  textColour);
+	Draw::drawText(xPad, windowH - (yPad * 3), statSize, ("Noise Scale " + caveStats[3]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 4), statSize, ("Smooth Iterations " + caveStats[4]).c_str(), textColour);
+
 	//Overview.
 	if (cameraView == -1) {
+		//Camera Mode.
 		Draw::drawText(30, 30, 0.15f, (char *)"Overview", textColour);
 	}
 	//Drone follow.
 	else {
-		Draw::drawText(30, 30, 0.15f, droneList[cameraView].name.c_str(), textColour);
+		vector<string> stats = droneList[cameraView].getStatistics();
+		//Camera Mode.
+		Draw::drawText(xPad, yPad, 0.15f, droneList[cameraView].name.c_str(), textColour);
+		//Header Text.
+		Draw::drawText(xPad + (1 * windowW / segments), 2 * yPad, textSize, "Distance Travelled", textColour);
+		Draw::drawText(xPad + (2 * windowW / segments), 2 * yPad, textSize, "Free Cells", textColour);
+		Draw::drawText(xPad + (3 * windowW / segments), 2 * yPad, textSize, "Occupied Cells", textColour);
+		Draw::drawText(xPad + (4 * windowW / segments), 2 * yPad, textSize, "Free from Comm.", textColour);
+		Draw::drawText(xPad + (5 * windowW / segments), 2 * yPad, textSize, "Occupied from Comm.", textColour);
+		//Statistics.
+		Draw::drawText(xPad + (1 * windowW / segments), yPad, statSize, stats[0].c_str(), textColour);
+		Draw::drawText(xPad + (2 * windowW / segments), yPad, statSize, stats[1].c_str(), textColour);
+		Draw::drawText(xPad + (3 * windowW / segments), yPad, statSize, stats[2].c_str(),  textColour);
+		Draw::drawText(xPad + (4 * windowW / segments), yPad, statSize, stats[3].c_str(), textColour);
+		Draw::drawText(xPad + (5 * windowW / segments), yPad, statSize, stats[4].c_str(), textColour);
 	}
 }
 
@@ -484,7 +526,7 @@ void displayControls() {
 	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"v - Change Camera View.", textColour);
 	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
 	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"H - Show/Hide Controls", textColour);
-	displayCameraMode(textColour);
+	displayStatistics(textColour);
 }
 
 //Draws the cave structure, features no smoothing.
@@ -956,19 +998,21 @@ void drawDronePath() {
 	}
 }
 
+//###
 void idle() {
 	if (!paused) {
 		usleep(250); //2500 Microseconds.
+		pollLocalCommunication(); //###
 		for (size_t i = 0; i < droneCount; i++) {
 			if (!droneList[i].complete) {
 				droneList[i].process();
 			}
 		}
-		pollLocalCommunication(); //###
 		glutPostRedisplay();
 	}
 }
 
+//###
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);
@@ -995,7 +1039,7 @@ void display() {
 	drawDiscoveredCells();
 	drawDronePath();
 
-	Draw::drawCommunication(debug, 0.5f, 0.05f); //###
+	Draw::drawCommunication(communicationSightLine, 0.5f, 0.05f); //###
 
 	//Dark translucent overlay onto cave to make controls mode visible.
 	if (!ctrlHidden) {
@@ -1013,7 +1057,7 @@ void display() {
 
 	//Displays control text on the screen.
 	if (ctrlHidden) {
-		displayCameraMode(textColour);
+		displayStatistics(textColour);
 	}
 	else { //Display control screen.
 		displayControls();

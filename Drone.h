@@ -22,16 +22,14 @@ public:
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
   void init(float x, float y, string _name, int _frontierChoiceMethod, int droneCount);
   void setPosition(float x,  float y);
-  pair<vector<SenseCell>,vector<SenseCell>> sense();
-  void recordConfiguration();
-  vector<Cell> getPathToTarget(pair<Cell,int> target);
   void process();
   bool allowCommunication(int x);
-  void combineMaps(vector<vector<int>> referenceMap);
+  void combineMaps(vector<vector<int>> referenceMap, int droneID);
+  vector<string> getStatistics();
 private:
   //Data Members.
-  map<int, int> frontierCells;
   int currentTimestep;
+  map<int, int> frontierCells;
   pair<Cell,int> currentTarget;
   vector<Cell> targetPath;
   float totalTravelled;
@@ -42,6 +40,9 @@ private:
   int frontierChoiceMethod;
   vector<int> lastCommunication;
   //Member functions.
+  pair<vector<SenseCell>,vector<SenseCell>> sense();
+  vector<Cell> getPathToTarget(pair<Cell,int> target);
+  void recordConfiguration();
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   pair<Cell,int> getBestFrontier();

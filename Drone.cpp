@@ -21,7 +21,7 @@ using namespace std;
 //Static Data Members.
 float Drone::searchRadius = 10.0f; //Range of localised search.
 float Drone::communicationRadius = 25.0f; //Range of inter-drone communication.
-int Drone::communicationTimeBuffer = 10; //Minimum number of timesteps required between communication.
+int Drone::communicationTimeBuffer = 25; //Minimum number of timesteps required between communication.
 
 static int caveWidth;
 static int caveHeight;
@@ -76,6 +76,8 @@ void Drone::init(float x, float y, string _name, int _frontierChoiceMethod, int 
   totalTravelled = 0;
   freeCount = 0;
   occupiedCount = 0;
+  commFreeCount = 0;
+  commOccupiedCount = 0;
   frontierCells.clear(); //Clears the frontier cells.
   pathList.clear();
   targetPath.clear();
@@ -535,9 +537,7 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  //###
-  //###cout << start.x << "," << start.y << " - " << dest.x << "," << dest.y << endl;
-
+  cout << "Start (" << start.x << "," << start.y << ") Dest: (" << dest.x << "," << dest.y << ")" << endl; //###
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -545,8 +545,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     single.push_back(start);
     return single;
   }
-
-  //###//###cout << "&1" << endl;
 
   set<int> closedSet; //Set of evaluated cells.
   set<int> openSet; //Set of unevaluated cells.
@@ -558,12 +556,9 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
   gScore[cellToInt(start)] = 0;
 
   map<int,float> fScore;
-  fScore[cellToInt(start)] = getCellManhattanDist(start, dest); //###???
-
-  //###//###cout << "&2" << endl;
+  fScore[cellToInt(start)] = getCellManhattanDist(start, dest);
 
   while (!openSet.empty()) {
-    //###//###cout << "&3" << endl;
     Cell current;
     float minScore = numeric_limits<float>::max();
 
@@ -575,11 +570,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
       }
     }
 
-    //###
-    ////###cout << "CURRENT: " << current.x << "," << current.y << endl;
-
-    //###//###cout << "&4" << endl;
-
     int currentI = cellToInt(current);
     if (current == dest) {
       return getAStarPath(previous, currentI);
@@ -588,8 +578,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     set<int>::iterator currentIt = openSet.find(currentI);
     openSet.erase(currentIt);
     closedSet.insert(currentI);
-
-    //###//###cout << "&5" << endl;
 
     //List of adjacent free/frontier cells to the current cell.
     vector<Cell> neighbours;
@@ -621,8 +609,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
     //Top-Right Neighbour.
     if (topright) { neighbours.push_back(Cell(x+1,y+1)); }
 
-    //###//###cout << "&6" << endl;
-
     //Iterate over each neighbour.
     for (auto const& neighbour : neighbours) {
       //###//###cout << "&7" << endl;
@@ -648,10 +634,8 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
   }
 }
 
+//###
 void Drone::process() {
-
-  //###
-  //###cout << "[" << name << "]" << endl;
 
   if (frontierCells.size() == 0) {
     complete = true;
@@ -660,27 +644,19 @@ void Drone::process() {
   }
 
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    //###cout << name << "1.A" << endl;
     currentTarget = getBestFrontier();
-    //###cout << name << "1.B" << endl;
+    cout << "[" << name << "] A.2" << endl; //###
     targetPath = getPathToTarget(currentTarget);
-    //###cout << name << "1.C" << endl;
+    cout << "[" << name << "] A.3" << endl; //###
   }
   else {
-    //###cout << name << "2.A" << endl;
     setPosition(targetPath.front().x, targetPath.front().y);
-    //###cout << name << "2.B" << endl;
     targetPath.erase(targetPath.begin()); //Removes the first cell in the target path.
-    //###cout << name << "2.C" << endl;
   }
 
-  //###cout << name << "3.A" << endl;
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
-  //###cout << name << "3.B" << endl;
   updateInternalMap(buffers.first, buffers.second);
-  //###cout << name << "3.C" << endl;
   findFrontierCells(buffers.first, buffers.second);
-  //###cout << name << "3.D" << endl;
   recordConfiguration();
 }
 
@@ -696,10 +672,11 @@ bool Drone::allowCommunication(int x) {
   return (currentTimestep >= lastCommunication[x] + communicationTimeBuffer);
 }
 
-
-void Drone::combineMaps(vector<vector<int>> referenceMap) {
+//###
+void Drone::combineMaps(vector<vector<int>> referenceMap, int droneID) {
 
   vector<Cell> frontierCheck; //List of cells to check if they are frontiers.
+  lastCommunication[droneID] = currentTimestep;
 
   //Updates internal map with the given reference map.
   for (size_t i = 0; i < caveWidth; i++) {
@@ -713,7 +690,7 @@ void Drone::combineMaps(vector<vector<int>> referenceMap) {
         internalMap[i][j] = Occupied;
         occupiedCount++;
         commOccupiedCount++;
-        //Adds the neighbouring cells to the lsit to be checked.
+        //Adds the neighbouring cells to the list to be checked.
         if (i - 1 >= 0 && internalMap[i-1][j] == Frontier) { frontierCheck.push_back(Cell(i-1,j)); }
         if (i + 1 < caveWidth && internalMap[i+1][j] == Frontier) { frontierCheck.push_back(Cell(i+1,j)); }
         if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
@@ -728,8 +705,12 @@ void Drone::combineMaps(vector<vector<int>> referenceMap) {
         else if (internalMap[i][j] == Frontier) {
           frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
         }
-        internalMap[i][j] == Free;
-        frontierCheck.push_back(Cell(i,j));
+        internalMap[i][j] = Free;
+        //Adds the neighbouring cells to the list to be checked.
+        if (i - 1 >= 0 && internalMap[i-1][j] == Frontier) { frontierCheck.push_back(Cell(i-1,j)); }
+        if (i + 1 < caveWidth && internalMap[i+1][j] == Frontier) { frontierCheck.push_back(Cell(i+1,j)); }
+        if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
+        if (j + 1 < caveHeight && internalMap[i][j+1] == Frontier) { frontierCheck.push_back(Cell(i,j+1)); }
       }
       else if (referenceMap[i][j] == Frontier && internalMap[i][j] != Free) {
         //Update frontier cell.
@@ -737,10 +718,10 @@ void Drone::combineMaps(vector<vector<int>> referenceMap) {
           freeCount++;
           commFreeCount++;
         }
-        else if (internalMap[i][j] == Frontier) { //###option for free as well.
+        else if (internalMap[i][j] == Frontier) {
           frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
         }
-        internalMap[i][j] == Free;
+        internalMap[i][j] = Free;
         frontierCheck.push_back(Cell(i,j));
       }
     }
@@ -752,31 +733,36 @@ void Drone::combineMaps(vector<vector<int>> referenceMap) {
     int y = cell.y;
     int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
 
-    if (x - 1 > 0 && internalMap[x-1][y] == Unknown) {
+    if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
       frontierCells[i] = currentTimestep;
-      continue;
     }
-    if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
+    else if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
       frontierCells[i] = currentTimestep;
-      continue;
     }
-    if (y - 1 > 0 && internalMap[x][y-1] == Unknown) {
+    else if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
       frontierCells[i] = currentTimestep;
-      continue;
     }
-    if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
+    else if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
       frontierCells[i] = currentTimestep;
-      continue;
     }
-
   }
 
+}
 
-
+//###
+vector<string> Drone::getStatistics() {
+  vector<string> output;
+  output.push_back(to_string((int)totalTravelled));
+  output.push_back(to_string(freeCount));
+  output.push_back(to_string(occupiedCount));
+  output.push_back(to_string(commFreeCount));
+  output.push_back(to_string(commOccupiedCount));
+  output.push_back(to_string(complete));
+  return output;
 }
 
 
