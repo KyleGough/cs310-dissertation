@@ -102,8 +102,21 @@ void Drone::init(float x, float y, string _name, int _frontierChoiceMethod, int 
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
   updateInternalMap(buffers.first, buffers.second);
   findFrontierCells(buffers.first, buffers.second);
-  currentTarget = getBestFrontier();
-  targetPath = getPathToTarget(currentTarget);
+
+  bool newTargetFound = false;
+  while (!newTargetFound) {
+    currentTarget = getBestFrontier();
+    targetPath = getPathToTarget(currentTarget);
+    //Target unreachable.
+    if (targetPath.size() == 0) {
+      frontierCells.erase(currentTarget.first.y * caveWidth + currentTarget.first.x);
+      internalMap[currentTarget.first.x][currentTarget.first.y] = Free;
+    }
+    else {
+      newTargetFound = true;
+    }
+  }
+
   recordConfiguration(); //Records the initial drone configuration.
 }
 
@@ -120,6 +133,8 @@ void Drone::setPosition(float x, float y) {
 
 //Models the sensing of the immediate local environment accounting for obstacles blocking sense view.
 pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
+
+
 
   vector<SenseCell> candidates; //List of candidate cells.
   vector<SenseCell> freeCells; //List of found free cells.
@@ -158,7 +173,7 @@ pair<vector<SenseCell>,vector<SenseCell>> Drone::sense() {
     bool collisionDetected = false; //If an occupied cell blocks the path from the drone to the cell to be checked.
 
     //Obstacle in line of sight between drone position and destination cell check.
-    for (auto const& occupyCheck :checkCells) {
+    for (auto const& occupyCheck : checkCells) {
       //Ignore if the cell to check is free.
       if (cave[occupyCheck.x][occupyCheck.y] == Free) { continue; }
 
@@ -458,6 +473,12 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
   //If the target frontier cell was sensed in the current timestep.
   if (targetTimestep == currentTimestep) {
     vector<Cell> path = searchAStar(startPos, target.first); //Gets the path using A*.
+
+    //Target unreachable.
+    if (path.size() == 0) {
+      return path;
+    }
+
     reverse(path.begin(), path.end()); //Reverses the path.
     return path;
   }
@@ -475,7 +496,11 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
     }
 
     vector<Cell> pathA = searchAStar(startPos, midPos);
+    if (pathA.size() == 0) { return pathA; } //Target unreachable.
+
     vector<Cell> pathB = searchAStar(midPos, target.first);
+    if (pathB.size() == 0) { return pathB; } //Target unreachable.
+
     //###cout << "A:1" << endl;
     reverse(pathA.begin(), pathA.end()); //Reverses path A.
     //###cout << "A:2" << endl;
@@ -632,6 +657,10 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
       fScore[neighbourI] = gScore[neighbourI] + getCellManhattanDist(neighbour, dest);
     }
   }
+
+  vector<Cell> null;
+  cout << "Non-Reach" << endl; //###
+  return null;
 }
 
 //###
@@ -643,11 +672,22 @@ void Drone::process() {
     return;
   }
 
+  //If current target has been discovered.
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    currentTarget = getBestFrontier();
-    cout << "[" << name << "] A.2" << endl; //###
-    targetPath = getPathToTarget(currentTarget);
-    cout << "[" << name << "] A.3" << endl; //###
+    bool newTargetFound = false;
+
+    while (!newTargetFound) {
+      currentTarget = getBestFrontier();
+      targetPath = getPathToTarget(currentTarget);
+      //Target unreachable.
+      if (targetPath.size() == 0) {
+        frontierCells.erase(currentTarget.first.y * caveWidth + currentTarget.first.x);
+        internalMap[currentTarget.first.x][currentTarget.first.y] = Free;
+      }
+      else {
+        newTargetFound = true;
+      }
+    }
   }
   else {
     setPosition(targetPath.front().x, targetPath.front().y);
