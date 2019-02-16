@@ -51,10 +51,11 @@ int cameraView = -1; //Overview camera view.
 vector<Drone> droneList;
 int droneCount = 1;
 bool paused = true;
+enum CommunicationMethod { Local, Global };
+CommunicationMethod commMethod = Global; //###
 
 //Controls.
 bool ctrlHidden = false;
-vector<Cell> communicationSightLine; //Cells to draw to show communication between drones.
 
 
 //Using a chance value, outputs true if a random value is smaller than the chance.
@@ -376,10 +377,8 @@ void generateRandomCave() {
 	generateCave(noiseOffsetX, noiseOffsetY, fillPercentage, noiseScale, smoothIt);
 }
 
-//###
+//Checks for obstructions between two points in the cave.
 bool lineOfSightCheck(int ax, int ay, int bx, int by) {
-
-	communicationSightLine.clear();
 
 	//Two points have the same x value.
 	if (ax == bx) {
@@ -403,7 +402,6 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 			float ymin = max((int)floor(floor((min(y0,y1) * 2.0f) + 0.5f) / 2.0f), min(ay,by));
 			float ymax = min((int)ceil(floor((max(y0,y1) * 2.0f) + 0.5f) / 2.0f), max(ay,by));
 			for (size_t y = ymin; y <= ymax; y++) {
-				communicationSightLine.push_back(Cell(x,y));
 				if (currentCave[x][y] == Occupied) { return false; }
 			}
 		}
@@ -452,7 +450,6 @@ void pollLocalCommunication() {
 	}
 }
 
-//###
 //All drones can communicate without being in view distance of each other.
 void pollGlobalCommunication() {
 
@@ -480,11 +477,21 @@ void displayStatistics(const float* textColour) {
 	const float textSize = 0.11f;
 
 	//Statistics.
-	Draw::drawText(xPad, windowH, statSize, ("x Offset " + caveStats[0]).c_str(), textColour);
-	Draw::drawText(xPad, windowH - yPad, statSize, ("Y Offset " + caveStats[1]).c_str(), textColour);
-	Draw::drawText(xPad, windowH - (yPad * 2), statSize, ("Fill Percentage " + caveStats[2]).c_str(),  textColour);
-	Draw::drawText(xPad, windowH - (yPad * 3), statSize, ("Noise Scale " + caveStats[3]).c_str(), textColour);
-	Draw::drawText(xPad, windowH - (yPad * 4), statSize, ("Smooth Iterations " + caveStats[4]).c_str(), textColour);
+	Draw::drawText(xPad, windowH, textSize, "Cave Stats" , textColour);
+	Draw::drawText(xPad, windowH - yPad, statSize, ("X Offset - " + caveStats[0]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 2), statSize, ("Y Offset - " + caveStats[1]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 3), statSize, ("Fill - " + caveStats[2] + "%").c_str(),  textColour);
+	Draw::drawText(xPad, windowH - (yPad * 4), statSize, ("Noise Scale - " + caveStats[3]).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 5), statSize, ("Smooth Iterations - " + caveStats[4]).c_str(), textColour);
+
+	//Other Statistics.
+	string state = paused ? "Paused" : "Running";
+	string comm = (commMethod == Local) ? "Local" : "Global";
+	string drone = (droneCount == -1) ? "0" : to_string(droneCount);
+	Draw::drawText(xPad, windowH - (yPad * 7), textSize, "Other Stats" , textColour);
+	Draw::drawText(xPad, windowH - (yPad * 8), statSize, ("State - " + state).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 9), statSize, ("No. Drones - " + drone).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 10), statSize, ("Communication - " + comm).c_str(), textColour);
 
 	//Overview.
 	if (cameraView == -1) {
@@ -525,7 +532,9 @@ void displayControls() {
 	Draw::drawText(leftPad, topPad - 350, 0.15f, (char *)"t - Toggle Smooth Cells.", textColour);
 	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"v - Change Camera View.", textColour);
 	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
-	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"H - Show/Hide Controls", textColour);
+	Draw::drawText(leftPad, topPad - 500, 0.15f, (char *)"F1-F5 - Load Cave Presets.", textColour);
+	Draw::drawText(leftPad, topPad - 550, 0.15f, (char *)"1-9 - Start simulation with N drones.", textColour);
+	Draw::drawText(leftPad, topPad - 700, 0.15f, (char *)"H - Show/Hide Controls", textColour);
 	displayStatistics(textColour);
 }
 
@@ -1001,8 +1010,11 @@ void drawDronePath() {
 //###
 void idle() {
 	if (!paused) {
-		usleep(250); //2500 Microseconds.
-		pollLocalCommunication(); //###
+		//2500 Microsecond pause.
+		usleep(250);
+		//Communication between drones.
+		(commMethod == Local) ? pollLocalCommunication() : pollGlobalCommunication();
+		//Processes each drone.
 		for (size_t i = 0; i < droneCount; i++) {
 			if (!droneList[i].complete) {
 				droneList[i].process();
@@ -1038,8 +1050,6 @@ void display() {
 	//Draws discovered cells by the drones and their paths.
 	drawDiscoveredCells();
 	drawDronePath();
-
-	Draw::drawCommunication(communicationSightLine, 0.5f, 0.05f); //###
 
 	//Dark translucent overlay onto cave to make controls mode visible.
 	if (!ctrlHidden) {
@@ -1177,7 +1187,7 @@ void specialKeyInput(int key, int x, int y) {
 			break;
 		case GLUT_KEY_F5:
 			cout << "[Preset 5]" << endl;
-			generateCave(72507, 33137, 49, 56, 12);
+			generateCave(42435, 6786, 49, 88, 2);
 			break;
 	}
 	glutPostRedisplay();

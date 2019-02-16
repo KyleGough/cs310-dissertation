@@ -472,6 +472,41 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
 
   //If the target frontier cell was sensed in the current timestep.
   if (targetTimestep == currentTimestep) {
+    vector<Cell> path = searchAStar(target.first, startPos); //Gets the path using A*.
+    return path;
+  }
+  //If the target frontier was sensed in a previous timestep.
+  else {
+    //Backtrack.
+    Cell midPos;
+
+    //Gets the position from where the target frontier was last observed from.
+    for (vector<DroneConfig>::reverse_iterator config = pathList.rbegin(); config != pathList.rend(); ++config) {
+      if (config->timestep == targetTimestep) {
+        midPos = getClosestCell(config->x, config->y);
+        break;
+      }
+    }
+
+    vector<Cell> pathA = searchAStar(midPos, startPos);
+    if (pathA.size() == 0) { return pathA; } //Target unreachable.
+
+    vector<Cell> pathB = searchAStar(target.first, midPos);
+    if (pathB.size() == 0) { return pathB; } //Target unreachable.
+
+    pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
+    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
+    return pathA;
+  }
+}
+
+/*//Uses A* and previously stored mapping of frontiers to find the path from the current position to the best frontier.
+vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
+  int targetTimestep = target.second;
+  Cell startPos = getClosestCell(posX, posY);
+
+  //If the target frontier cell was sensed in the current timestep.
+  if (targetTimestep == currentTimestep) {
     vector<Cell> path = searchAStar(startPos, target.first); //Gets the path using A*.
 
     //Target unreachable.
@@ -513,7 +548,7 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
     //###cout << "A:5" << endl;
     return pathA;
   }
-}
+}*/
 
 //Maps a cell to an integer value.
 int Drone::cellToInt(Cell src) {
@@ -712,7 +747,7 @@ bool Drone::allowCommunication(int x) {
   return (currentTimestep >= lastCommunication[x] + communicationTimeBuffer);
 }
 
-//###
+//Merges the drone's internal map with another drone's map.
 void Drone::combineMaps(vector<vector<int>> referenceMap, int droneID) {
 
   vector<Cell> frontierCheck; //List of cells to check if they are frontiers.
@@ -793,7 +828,7 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, int droneID) {
 
 }
 
-//###
+//Outputs drone statistics as a vector string.
 vector<string> Drone::getStatistics() {
   vector<string> output;
   output.push_back(to_string((int)totalTravelled));
