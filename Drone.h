@@ -51,8 +51,9 @@ private:
   void recordConfiguration();
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
-  void locateNearbyDrones(); //###
-  pair<Cell,int> getBestFrontier();
+  vector<pair<float,float>> getNearDroneWeightMap();
+  pair<Cell,int> getBestFrontier(vector<pair<float,float>> nearDroneWeightMap);
+  pair<Cell,int> getDebug(vector<pair<float,float>> nearDroneWeightMap); //###
   pair<Cell,int> getNearestFrontier();
   pair<Cell,int> getLatestFrontier();
   float getDistToDrone(Cell dest);

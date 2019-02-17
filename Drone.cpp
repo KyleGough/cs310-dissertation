@@ -359,7 +359,11 @@ void Drone::addNearDrone(float x, float y) {
 }
 
 //###
-void Drone::locateNearbyDrones() {
+vector<pair<float,float>> Drone:: getNearDroneWeightMap() {
+
+  vector<pair<float,float>> nearDroneWeight;
+
+  //Iterates over each nearby drone.
   for (size_t i = 0; i < nearDrones.size(); i++) {
     float x = nearDrones[i].first;
     float y = nearDrones[i].second;
@@ -368,33 +372,75 @@ void Drone::locateNearbyDrones() {
     if (posX == x && posY == y) { continue; }
 
     float dist = getDistToDrone(x, y);
-    float distWeight = pow(communicationRadius - dist, 2.0f); //###maybe make into function input: dist, out weight.
+    //###float distWeight = pow(communicationRadius - dist, 2.0f); //###maybe make into function input: dist, out weight.
     float theta = atan2(x - posX, y - posY);
     if (theta < 0.0f) {
       theta += M_PI * 2.0f;
     }
-    cout << "[" << name << "] (" << posX << "," << posY << ") - (" << x << "," << y << ") - Bearing: " << theta << endl;
 
+    nearDroneWeight.push_back(make_pair(theta, dist));
+
+    //North 0, East PI/2, South PI, West 3PI/2.
+    cout << "[" << name << "] (" << posX << "," << posY << ") - (" << x << "," << y << ") - Bearing: " << theta << endl;
     //###do
     //do weighting based on sqaure of distance. nearer the bigger maybe (searchrad  - dist)^2
     //construct gaussian for that bearing
     //combine guassians.
-
   }
 
-  //after processing clear neardrone vector. ###
   nearDrones.clear();
+  return nearDroneWeight;
 }
 
-
-
 //Finds the best frontier cell to navigate to.
-pair<Cell,int> Drone::getBestFrontier() {
+pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightMap) {
   switch (frontierChoiceMethod) {
     case 0:
       return getNearestFrontier();
     case 1:
       return getLatestFrontier();
+    case 2:
+      return getDebug(nearDroneWeightMap); //###
+  }
+}
+
+//###
+pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
+
+
+  //Gets the maximum timestep in the frontier cell list.
+  int maxTimestep = 0;
+  for(auto& frontier : frontierCells) {
+    if (frontier.second > maxTimestep) {
+      maxTimestep = frontier.second;
+    }
+  }
+
+  for(auto& frontier : frontierCells) {
+
+    int frontierTimestep = frontier.second;
+
+    if (frontierTimestep == currentTimestep) {
+
+      Cell frontierCell = intToCell(frontier.first);
+      float frontierDistance = getDistToDrone(frontierCell);
+      float frontierBearing = atan2(frontierCell.x - posX, frontierCell.y - posY);
+      if (frontierBearing < 0.0f) {
+        frontierBearing += M_PI * 2.0f;
+      }
+
+      float bearingWeight = 1;
+
+      for (size_t i = 0; i < nearDroneWeightMap.size(); i++) {
+        float bearingDiff = max(frontierBearing, nearDroneWeightMap[i].first) - min(frontierBearing, nearDroneWeightMap[i].first);
+        float droneDist = nearDroneWeightMap[i].second;
+        float droneDistWeight = pow(communicationRadius - droneDist, 2.0f); //###change to search radius eventualy with main.cpp communicate.
+
+
+      }
+
+
+    }
   }
 }
 
@@ -700,10 +746,10 @@ void Drone::process() {
     bool newTargetFound = false;
 
     //###
-    locateNearbyDrones();
+    vector<pair<float,float>> nearDroneWeightMap = getNearDroneWeightMap();
 
     while (!newTargetFound) {
-      currentTarget = getBestFrontier();
+      currentTarget = getBestFrontier(nearDroneWeightMap);
       targetPath = getPathToTarget(currentTarget);
       //Target unreachable.
       if (targetPath.size() == 0) {
