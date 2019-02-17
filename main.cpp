@@ -49,10 +49,9 @@ int cameraView = -1; //Overview camera view.
 
 //Drone.
 vector<Drone> droneList;
-int droneCount = 1;
 bool paused = true;
 enum CommunicationMethod { Local, Global };
-CommunicationMethod commMethod = Global; //###
+CommunicationMethod commMethod = Local; //###
 
 //Controls.
 bool ctrlHidden = false;
@@ -317,7 +316,7 @@ void generateCave(float noiseOffsetX, float noiseOffsetY, float fillPercentage, 
 	caveStats.push_back(to_string((int)noiseScale));
 	caveStats.push_back(to_string((int)smoothIt));
 
-	droneCount = -1;
+	Drone::droneCount = -1;
 	cameraView = -1;
 	paused = true;
 
@@ -412,6 +411,10 @@ bool lineOfSightCheck(int ax, int ay, int bx, int by) {
 
 //If enough time has elapsed between last communication then the interla maps of the drones are combined.
 void communicate(int a, int b) {
+	//Informs the drone of nearby drones to help frontier selection.
+	droneList[a].addNearDrone(droneList[b].posX, droneList[b].posY);
+	droneList[b].addNearDrone(droneList[a].posX, droneList[a].posY);
+
 	//Check to see if enough time has elapsed between communications with drones a and b.
 	if (droneList[a].allowCommunication(b)) {
 		droneList[a].combineMaps(droneList[b].internalMap, b);
@@ -424,11 +427,11 @@ void communicate(int a, int b) {
 void pollLocalCommunication() {
 
 	//Skip polling communication if there arn't enough drones to communicate.
-	if (droneCount <= 1) { return; }
+	if (Drone::droneCount <= 1) { return; }
 
 	//For each unique pair of drones in communication range.
-	for (size_t i = 0; i < droneCount - 1; i++) {
-		for (size_t j = i + 1; j < droneCount; j++) {
+	for (size_t i = 0; i < Drone::droneCount - 1; i++) {
+		for (size_t j = i + 1; j < Drone::droneCount; j++) {
 			float dx = droneList[i].posX - droneList[j].posX;
 			float dy = droneList[i].posY - droneList[j].posY;
 			float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f), 0.5f);
@@ -454,11 +457,11 @@ void pollLocalCommunication() {
 void pollGlobalCommunication() {
 
 	//Skip polling communication if there arn't enough drones to communicate.
-	if (droneCount <= 1) { return; }
+	if (Drone::droneCount <= 1) { return; }
 
 	//For each unique pair of drones in communication range.
-	for (size_t i = 0; i < droneCount - 1; i++) {
-		for (size_t j = i + 1; j < droneCount; j++) {
+	for (size_t i = 0; i < Drone::droneCount - 1; i++) {
+		for (size_t j = i + 1; j < Drone::droneCount; j++) {
 			communicate(i,j);
 		}
 	}
@@ -487,7 +490,7 @@ void displayStatistics(const float* textColour) {
 	//Other Statistics.
 	string state = paused ? "Paused" : "Running";
 	string comm = (commMethod == Local) ? "Local" : "Global";
-	string drone = (droneCount == -1) ? "0" : to_string(droneCount);
+	string drone = (Drone::droneCount == -1) ? "0" : to_string(Drone::droneCount);
 	Draw::drawText(xPad, windowH - (yPad * 7), textSize, "Other Stats" , textColour);
 	Draw::drawText(xPad, windowH - (yPad * 8), statSize, ("State - " + state).c_str(), textColour);
 	Draw::drawText(xPad, windowH - (yPad * 9), statSize, ("No. Drones - " + drone).c_str(), textColour);
@@ -962,9 +965,9 @@ void droneListInit() {
 	droneList.clear();
 	string droneNames[9] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota"};
 	int droneMethod[9] = {1,0,0,1,0,1,0,1,0}; //###frontier selection, for debug atm.
-	for (size_t i = 0; i < droneCount; i++) {
+	for (size_t i = 0; i < Drone::droneCount; i++) {
 		Drone newDrone;
-		newDrone.init(startCell.x, startCell.y, droneNames[i], droneMethod[i], droneCount);
+		newDrone.init(i, startCell.x, startCell.y, droneNames[i], droneMethod[i]);
 		droneList.push_back(newDrone);
 	}
 }
@@ -972,14 +975,14 @@ void droneListInit() {
 //Draws the discovered cells of all drones in overview mode or one particular drone.
 void drawDiscoveredCells() {
 	//If there no drones present return.
-	if (droneCount == -1) { return; };
+	if (Drone::droneCount == -1) { return; };
 
 	renderDrone(); //Renders the drones.
 	if (cameraView == -1) { //Overview mode.
 		 //Free, Occupied, Frontier colours.
 		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f, 0.5f}};
 		//Draws the free and occupied cells of every drone.
-		for (size_t i = 0; i < droneCount; i++) {
+		for (size_t i = 0; i < Drone::droneCount; i++) {
 			Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[i].internalMap, colours);
 		}
 	}
@@ -995,12 +998,12 @@ void drawDiscoveredCells() {
 //Draws the discovered cells of all drones in overview mode or one particular drone.
 void drawDronePath() {
 	//If there exists at least one drone.
-	if (droneCount != -1) {
+	if (Drone::droneCount != -1) {
 		if (cameraView != -1) { //Draws only the path of the drone being followed.
  			Draw::drawDronePath(droneList[cameraView].pathList, depth / 2.0f, 0.25f, colourMask[cameraView]);
  		}
 		else { //Draws all drone paths.
-			for (size_t i = 0; i < droneCount; i++) {
+			for (size_t i = 0; i < Drone::droneCount; i++) {
 				Draw::drawDronePath(droneList[i].pathList, depth / 2.0f, 0.25f, colourMask[i]);
 			}
 		}
@@ -1015,7 +1018,7 @@ void idle() {
 		//Communication between drones.
 		(commMethod == Local) ? pollLocalCommunication() : pollGlobalCommunication();
 		//Processes each drone.
-		for (size_t i = 0; i < droneCount; i++) {
+		for (size_t i = 0; i < Drone::droneCount; i++) {
 			if (!droneList[i].complete) {
 				droneList[i].process();
 			}
@@ -1116,23 +1119,23 @@ void keyboardInput(unsigned char key, int, int) {
 			generateRandomCave();
 			break;
 		//Pauses the simulation.
-		case ' ': if (droneCount != -1) { paused = !paused; } break;
+		case ' ': if (Drone::droneCount != -1) { paused = !paused; } break;
 		//Smoothing.
 		case 'T':
 		case 't': caveSmooth = !caveSmooth; break;
 		//Switch Camera View.
 		case 'v':
-		case 'V': cameraView = (++cameraView >= droneCount) ? -1 : cameraView; break;
+		case 'V': cameraView = (++cameraView >= Drone::droneCount) ? -1 : cameraView; break;
 		//Start simulation with n drones.
-		case '1': droneCount = 1; droneListInit(); break;
-		case '2':	droneCount = 2;	droneListInit();break;
-		case '3':	droneCount = 3;	droneListInit(); break;
-		case '4':	droneCount = 4;	droneListInit(); break;
-		case '5':	droneCount = 5;	droneListInit(); break;
-		case '6':	droneCount = 6;	droneListInit(); break;
-		case '7':	droneCount = 7;	droneListInit(); break;
-		case '8':	droneCount = 8;	droneListInit(); break;
-		case '9':	droneCount = 9;	droneListInit(); break;
+		case '1': Drone::droneCount = 1; droneListInit(); break;
+		case '2':	Drone::droneCount = 2;	droneListInit();break;
+		case '3':	Drone::droneCount = 3;	droneListInit(); break;
+		case '4':	Drone::droneCount = 4;	droneListInit(); break;
+		case '5':	Drone::droneCount = 5;	droneListInit(); break;
+		case '6':	Drone::droneCount = 6;	droneListInit(); break;
+		case '7':	Drone::droneCount = 7;	droneListInit(); break;
+		case '8':	Drone::droneCount = 8;	droneListInit(); break;
+		case '9':	Drone::droneCount = 9;	droneListInit(); break;
 		//Show/Hide Controls.
 		case 'h':
 		case 'H': ctrlHidden = !ctrlHidden; break;

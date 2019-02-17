@@ -23,11 +23,13 @@ float Drone::searchRadius = 10.0f; //Range of localised search.
 float Drone::communicationRadius = 25.0f; //Range of inter-drone communication.
 int Drone::communicationTimeBuffer = 25; //Minimum number of timesteps required between communication.
 
-static int caveWidth;
-static int caveHeight;
-static vector<vector<int>> cave;
+int Drone::caveWidth;
+int Drone::caveHeight;
+vector<vector<int>> Drone::cave;
+int Drone::droneCount;
 
 //Data Members.
+int id; //Unique number for the drone.
 string name; //Name of the drone.
 float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
@@ -41,6 +43,7 @@ int currentTimestep; //Current timestep used to mark when frontiers were last id
 pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep in which it was identified.
 vector<Cell> targetPath; //List of cells that head towards the current target.
 vector<int> lastCommunication; //List of timesteps when last communicated with other drones.
+vector<pair<float,float>> nearDrones; //List of nearby drones.
 
 //Statistics.
 float totalTravelled; //Total distance travelled.
@@ -63,7 +66,7 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 }
 
 //Initalises the drone's starting position, name and internal map.
-void Drone::init(float x, float y, string _name, int _frontierChoiceMethod, int droneCount) {
+void Drone::init(int id, float x, float y, string _name, int _frontierChoiceMethod) {
   //Set given parameters.
   posX = x;
   posY = y;
@@ -350,6 +353,41 @@ void Drone::findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell
   }
 }
 
+//###
+void Drone::addNearDrone(float x, float y) {
+  nearDrones.push_back(make_pair(x,y));
+}
+
+//###
+void Drone::locateNearbyDrones() {
+  for (size_t i = 0; i < nearDrones.size(); i++) {
+    float x = nearDrones[i].first;
+    float y = nearDrones[i].second;
+
+    //If drones have the same position, ignore.
+    if (posX == x && posY == y) { continue; }
+
+    float dist = getDistToDrone(x, y);
+    float distWeight = pow(communicationRadius - dist, 2.0f); //###maybe make into function input: dist, out weight.
+    float theta = atan2(x - posX, y - posY);
+    if (theta < 0.0f) {
+      theta += M_PI * 2.0f;
+    }
+    cout << "[" << name << "] (" << posX << "," << posY << ") - (" << x << "," << y << ") - Bearing: " << theta << endl;
+
+    //###do
+    //do weighting based on sqaure of distance. nearer the bigger maybe (searchrad  - dist)^2
+    //construct gaussian for that bearing
+    //combine guassians.
+
+  }
+
+  //after processing clear neardrone vector. ###
+  nearDrones.clear();
+}
+
+
+
 //Finds the best frontier cell to navigate to.
 pair<Cell,int> Drone::getBestFrontier() {
   switch (frontierChoiceMethod) {
@@ -500,56 +538,6 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
   }
 }
 
-/*//Uses A* and previously stored mapping of frontiers to find the path from the current position to the best frontier.
-vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
-  int targetTimestep = target.second;
-  Cell startPos = getClosestCell(posX, posY);
-
-  //If the target frontier cell was sensed in the current timestep.
-  if (targetTimestep == currentTimestep) {
-    vector<Cell> path = searchAStar(startPos, target.first); //Gets the path using A*.
-
-    //Target unreachable.
-    if (path.size() == 0) {
-      return path;
-    }
-
-    reverse(path.begin(), path.end()); //Reverses the path.
-    return path;
-  }
-  //If the target frontier was sensed in a previous timestep.
-  else {
-    //Backtrack.
-    Cell midPos;
-
-    //Gets the position from where the target frontier was last observed from.
-    for (vector<DroneConfig>::reverse_iterator config = pathList.rbegin(); config != pathList.rend(); ++config) {
-      if (config->timestep == targetTimestep) {
-        midPos = getClosestCell(config->x, config->y);
-        break;
-      }
-    }
-
-    vector<Cell> pathA = searchAStar(startPos, midPos);
-    if (pathA.size() == 0) { return pathA; } //Target unreachable.
-
-    vector<Cell> pathB = searchAStar(midPos, target.first);
-    if (pathB.size() == 0) { return pathB; } //Target unreachable.
-
-    //###cout << "A:1" << endl;
-    reverse(pathA.begin(), pathA.end()); //Reverses path A.
-    //###cout << "A:2" << endl;
-    //###cout << pathB.size() << endl;
-    reverse(pathB.begin(), pathB.end()); //Reverses path B.
-    //###cout << "A:3" << endl;
-    pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
-    //###cout << "A:4" << endl;
-    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
-    //###cout << "A:5" << endl;
-    return pathA;
-  }
-}*/
-
 //Maps a cell to an integer value.
 int Drone::cellToInt(Cell src) {
   return src.y * caveWidth + src.x;
@@ -597,7 +585,7 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  cout << "Start (" << start.x << "," << start.y << ") Dest: (" << dest.x << "," << dest.y << ")" << endl; //###
+  //###cout << "Start (" << start.x << "," << start.y << ") Dest: (" << dest.x << "," << dest.y << ")" << endl; //###
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -710,6 +698,9 @@ void Drone::process() {
   //If current target has been discovered.
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
     bool newTargetFound = false;
+
+    //###
+    locateNearbyDrones();
 
     while (!newTargetFound) {
       currentTarget = getBestFrontier();

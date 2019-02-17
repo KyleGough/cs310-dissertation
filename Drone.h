@@ -8,6 +8,7 @@ using namespace std;
 class Drone {
 public:
   //Data Members.
+  static int droneCount;
   static float searchRadius;
   static float communicationRadius;
   static int communicationTimeBuffer;
@@ -20,14 +21,19 @@ public:
   vector<DroneConfig> pathList;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
-  void init(float x, float y, string _name, int _frontierChoiceMethod, int droneCount);
+  void init(int id, float x, float y, string _name, int _frontierChoiceMethod);
   void setPosition(float x,  float y);
   void process();
   bool allowCommunication(int x);
   void combineMaps(vector<vector<int>> referenceMap, int droneID);
   vector<string> getStatistics();
+  void addNearDrone(float x, float y);
 private:
   //Data Members.
+  static int caveWidth;
+  static int caveHeight;
+  static vector<vector<int>> cave;
+  int id;
   int currentTimestep;
   map<int, int> frontierCells;
   pair<Cell,int> currentTarget;
@@ -45,6 +51,7 @@ private:
   void recordConfiguration();
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
+  void locateNearbyDrones(); //###
   pair<Cell,int> getBestFrontier();
   pair<Cell,int> getNearestFrontier();
   pair<Cell,int> getLatestFrontier();
