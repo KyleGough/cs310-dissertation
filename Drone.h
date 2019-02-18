@@ -28,6 +28,7 @@ public:
   void combineMaps(vector<vector<int>> referenceMap, int droneID);
   vector<string> getStatistics();
   void addNearDrone(float x, float y);
+  static float normalDistribution(float x, float mean, float std); //###
 private:
   //Data Members.
   static int caveWidth;
@@ -45,6 +46,7 @@ private:
   int commOccupiedCount;
   int frontierChoiceMethod;
   vector<int> lastCommunication;
+  vector<pair<float,float>> nearDrones;
   //Member functions.
   pair<vector<SenseCell>,vector<SenseCell>> sense();
   vector<Cell> getPathToTarget(pair<Cell,int> target);

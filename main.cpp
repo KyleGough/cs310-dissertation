@@ -1014,7 +1014,7 @@ void drawDronePath() {
 void idle() {
 	if (!paused) {
 		//2500 Microsecond pause.
-		usleep(250);
+		usleep(2500); //###250
 		//Communication between drones.
 		(commMethod == Local) ? pollLocalCommunication() : pollGlobalCommunication();
 		//Processes each drone.
@@ -1141,8 +1141,13 @@ void keyboardInput(unsigned char key, int, int) {
 		case 'H': ctrlHidden = !ctrlHidden; break;
 		//DEBUG###
 		case 'e':
-			pollLocalCommunication();
-			cout << round(-1.5) << endl; //###
+			cout << Drone::normalDistribution(M_PI, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 2.0f, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 4.0f, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 8.0f, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 8.0f, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 16.0f, 0, M_PI / 8.0f) << endl;
+			cout << Drone::normalDistribution(M_PI / 32.0f, 0, M_PI / 8.0f) << endl;
 			break;
 	}
 	glutPostRedisplay();
