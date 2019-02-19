@@ -21,7 +21,7 @@ public:
   vector<DroneConfig> pathList;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
-  void init(int id, float x, float y, string _name, int _frontierChoiceMethod);
+  void init(int _id, float x, float y, string _name, int _frontierChoiceMethod);
   void setPosition(float x,  float y);
   void process();
   bool allowCommunication(int x);

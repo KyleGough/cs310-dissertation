@@ -964,7 +964,7 @@ void setCameraView() {
 void droneListInit() {
 	droneList.clear();
 	string droneNames[9] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota"};
-	int droneMethod[9] = {1,0,0,1,0,1,0,1,0}; //###frontier selection, for debug atm.
+	int droneMethod[9] = {2,2,2,2,2,2,2,2,2}; //###frontier selection, for debug atm.
 	for (size_t i = 0; i < Drone::droneCount; i++) {
 		Drone newDrone;
 		newDrone.init(i, startCell.x, startCell.y, droneNames[i], droneMethod[i]);
@@ -1014,7 +1014,7 @@ void drawDronePath() {
 void idle() {
 	if (!paused) {
 		//2500 Microsecond pause.
-		usleep(2500); //###250
+		usleep(2500);
 		//Communication between drones.
 		(commMethod == Local) ? pollLocalCommunication() : pollGlobalCommunication();
 		//Processes each drone.
@@ -1228,7 +1228,7 @@ int main(int argc, char* argv[]) {
 	//Window Properties.
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-	glutInitWindowSize(1000, 1000);
+	glutInitWindowSize(1600, 900);
 	glutInitWindowPosition(25, 25);
 	glutCreateWindow("Cave Generation");
 

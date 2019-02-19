@@ -10,8 +10,8 @@
 #include <map>
 #include <set>
 #include <limits>
-#include <queue>
 #include <tuple>
+#include <queue>
 #include "Cell.h"
 #include "SenseCell.h"
 #include "DroneConfig.h"
@@ -21,7 +21,7 @@ using namespace std;
 
 //Static Data Members.
 float Drone::searchRadius = 10.0f; //Range of localised search.
-float Drone::communicationRadius = 25.0f; //Range of inter-drone communication.
+float Drone::communicationRadius = 10.0f; //Range of inter-drone communication.
 int Drone::communicationTimeBuffer = 25; //Minimum number of timesteps required between communication.
 
 int Drone::caveWidth;
@@ -67,8 +67,9 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 }
 
 //Initalises the drone's starting position, name and internal map.
-void Drone::init(int id, float x, float y, string _name, int _frontierChoiceMethod) {
+void Drone::init(int _id, float x, float y, string _name, int _frontierChoiceMethod) {
   //Set given parameters.
+  id = _id;
   posX = x;
   posY = y;
   name = _name;
@@ -389,13 +390,16 @@ vector<pair<float,float>> Drone:: getNearDroneWeightMap() {
 pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightMap) {
   switch (frontierChoiceMethod) {
     case 0:
-      getDebug(nearDroneWeightMap); //###
       return getNearestFrontier();
     case 1:
-      getDebug(nearDroneWeightMap); //###
       return getLatestFrontier();
     case 2:
-      return getDebug(nearDroneWeightMap); //###
+      if (nearDroneWeightMap.size() == 0) {
+        return getLatestFrontier();
+      }
+      else {
+        return getDebug(nearDroneWeightMap); //###
+      }
   }
 }
 
@@ -464,48 +468,68 @@ pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
   float maxDist = 0.0f;
   getFrontierCellStats(minTs, maxTs, minDist, maxDist);
 
-  vector<pair<Cell,float>> cellWeightVector;
+  vector<tuple<Cell,int,float>> cellWeightVector;
   float cumulativeWeight = 0.0f;
 
   for(auto& frontier : frontierCells) {
     int frontierTs = frontier.second;
 
-      Cell frontierCell = intToCell(frontier.first);
-      float frontierDistance = getDistToDrone(frontierCell);
-      float frontierBearing = atan2(frontierCell.x - posX, frontierCell.y - posY);
-      if (frontierBearing < 0.0f) {
-        frontierBearing += M_PI * 2.0f;
-      }
+    Cell frontierCell = intToCell(frontier.first);
+    float frontierDistance = getDistToDrone(frontierCell);
+    float frontierBearing = atan2(frontierCell.x - posX, frontierCell.y - posY);
+    if (frontierBearing < 0.0f) {
+      frontierBearing += M_PI * 2.0f;
+    }
 
-      float bearingWeight = 1.0f;
+    float bearingWeight = 1.0f;
 
-      for (size_t i = 0; i < nearDroneWeightMap.size(); i++) {
-        float bearingDiff = max(frontierBearing, nearDroneWeightMap[i].first) - min(frontierBearing, nearDroneWeightMap[i].first);
-        float droneDist = nearDroneWeightMap[i].second;
-        float droneDistWeight = pow(communicationRadius - droneDist, 2.0f); //###change to search radius eventualy with main.cpp communicate.
-        float pdf = 1.0f - normalDistribution(bearingDiff, 0.0f, M_PI / 8); //###
-        bearingWeight *= pdf;
-      }
-      //bearing weight can be negative. ###q
+    for (size_t i = 0; i < nearDroneWeightMap.size(); i++) {
+      float bearingDiff = max(frontierBearing, nearDroneWeightMap[i].first) - min(frontierBearing, nearDroneWeightMap[i].first);
+      float droneDist = nearDroneWeightMap[i].second;
+      float droneDistWeight = pow(communicationRadius - droneDist, 2.0f); //###change to search radius eventualy with main.cpp communicate.
+      float pdf = 1.0f - normalDistribution(bearingDiff, 0.0f, M_PI / 8); //###
+      bearingWeight *= pdf;
+    }
+    if (bearingWeight < 0.0f) { bearingWeight = 0.0f; }
+    //bearing weight can be negative. ###q
 
-      float distWeight = 1.0f - ((frontierDistance - minDist) / (maxDist - minDist));
-      float tsWeight = (float)(frontierTs - minTs) / (float)(maxTs - minTs);
-      float weight = pow(distWeight, 1.0f) * pow(tsWeight, 1.0f) * pow(bearingWeight, 1.0f);
-      cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
+    float distRange = maxDist - minDist;
+    float distWeight;
+    if (distRange == 0) {
+      distWeight = 1.0f;
+    }
+    else {
+      distWeight = 1.0f - ((frontierDistance - minDist) / distRange);
+    }
 
-      cumulativeWeight += weight;
-      cellWeightVector.push_back(make_pair(frontierCell,cumulativeWeight));
+    float tsRange = (float)(maxTs - minTs);
+    float tsWeight;
+    if (tsRange == 0) {
+      tsWeight = 1.0f;
+    }
+    else {
+      tsWeight = (float)(frontierTs - minTs) / tsRange;
+    }
+
+    float weight = /*pow(distWeight, 2.0f) **/ pow(tsWeight, 6.0f) * pow(bearingWeight, 1.0f);
+    cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
+
+    cumulativeWeight += weight;
+    cellWeightVector.push_back(make_tuple(frontierCell, frontierTs, cumulativeWeight));
   }
 
 
-  float rand = static_cast<float>(rand())/(static_cast<float>(RAND_MAX/cumulativeWeight));
-  cout << rand << endl;
+  float randWeight = static_cast<float>(rand())/(static_cast<float>(RAND_MAX/cumulativeWeight));
+  cout << "C: " << cumulativeWeight << " R: " << randWeight << endl;
 
-  //create cumulative weight vector
-  //random
-  //choose cell.
-
-
+  for(auto& frontier : cellWeightVector) {
+    Cell c; int ts; float w;
+    tie(c,ts,w) = frontier;
+    if (randWeight <= w) {
+      cout << "Choice: (" << c.x << "," << c.y << ") - " << ts << endl;
+      return make_pair(c,ts);
+    }
+  }
 }
 
 //###
@@ -526,7 +550,6 @@ pair<Cell,int> Drone::getLatestFrontier() {
   int ts;
 
   //Gets all the frontiers which have the maximum timestep.
-  //vector<pair<Cell,int>> latestFrontiers;
   for(auto& frontier : frontierCells) {
     if (frontier.second == maxTimestep) {
       Cell a = intToCell(frontier.first);
@@ -536,34 +559,10 @@ pair<Cell,int> Drone::getLatestFrontier() {
         bestFrontier = a;
         ts = frontier.second;
       }
-      //latestFrontiers.push_back(make_pair(intToCell(frontier.first), maxTimestep));
     }
   }
 
   return make_pair(bestFrontier, ts);
-
-
-  /*float bestBearing = numeric_limits<float>::max();
-  Cell bestFrontier;
-  int ts;
-
-  for(auto& cell : latestFrontiers) {
-    float bearing2 = atan2(cell.first.x - posX, cell.first.y - posY);
-    float bearingDiff = bearing - bearing2;
-    if (bearingDiff < -M_PI) {
-      bearingDiff += M_PI;
-    }
-    if (bearingDiff >= M_PI) {
-      bearingDiff -= M_PI;
-    }
-    if (abs(bearingDiff) < bestBearing) {
-      bestBearing = abs(bearingDiff);
-      bestFrontier = cell.first;
-      ts = cell.second;
-    }
-  }*/
-
-  //return make_pair(bestFrontier, ts);
 }
 
 //Gets the nearest frontier cell to the drone's current position.
@@ -797,6 +796,12 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
 //###
 void Drone::process() {
+
+  //###
+  if (currentTimestep <= id) {
+    recordConfiguration();
+    return;
+  }
 
   if (frontierCells.size() == 0) {
     complete = true;
