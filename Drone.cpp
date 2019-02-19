@@ -11,6 +11,7 @@
 #include <set>
 #include <limits>
 #include <queue>
+#include <tuple>
 #include "Cell.h"
 #include "SenseCell.h"
 #include "DroneConfig.h"
@@ -357,7 +358,6 @@ void Drone::findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell
 //Adds a drone position to the near drones vector.
 void Drone::addNearDrone(float x, float y) {
   nearDrones.push_back(make_pair(x,y));
-  cout << name << ":" << nearDrones.size() << endl; //###
 }
 
 //###
@@ -374,13 +374,11 @@ vector<pair<float,float>> Drone:: getNearDroneWeightMap() {
     if (posX == x && posY == y) { continue; }
 
     float dist = getDistToDrone(x, y);
-    //###float distWeight = pow(communicationRadius - dist, 2.0f); //###maybe make into function input: dist, out weight.
     //North 0, East PI/2, South PI, West 3PI/2.
     float theta = atan2(x - posX, y - posY);
     if (theta < 0.0f) {
       theta += M_PI * 2.0f;
     }
-
     nearDroneWeight.push_back(make_pair(theta, dist));
   }
 
@@ -409,31 +407,34 @@ float Drone::normalDistribution(float x, float mean, float std) {
   return coeff * exp(exponent);
 }
 
-
-tuple<
-
-
 //###
-pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
+void Drone::getFrontierCellStats(float &minTs, float &maxTs, float &minDist, float &maxDist) {
 
-  cout << "START getDebug - " << name << " - (" << posX << "," << posY << ") " << nearDroneWeightMap.size() << endl; //###
-
-
-  int maxTimestep = 0;
-  float minDistance = numeric_limits<float>::max(); //###
+  //float minTimestep = numeric_limits<int>::max();
+  //float maxTimestep = 0;
+  //float minDistance = numeric_limits<float>::max();
+  //float maxDistance = 0.0f;
   float distanceSum = 0.0f;
 
   //Gets the maximum timestep and minimum distance in the frontier cell list.
   for(auto& frontier : frontierCells) {
+    //Updates minimum timestep if the frontier's timestep is lower.
+    if (frontier.second < minTs) {
+      minTs = frontier.second;
+    }
     //Updates maximum timestep if the frontier's timestep is greater.
-    if (frontier.second > maxTimestep) {
-      maxTimestep = frontier.second;
+    if (frontier.second > maxTs) {
+      maxTs = frontier.second;
     }
     //Updates the minimum distance if the frontier's distance is less.
     Cell frontierCell = intToCell(frontier.first);
     float frontierDistance = getDistToDrone(frontierCell);
-    if (frontierDistance < minDistance) {
-      minDistance = frontierDistance;
+    if (frontierDistance < minDist) {
+      minDist = frontierDistance;
+    }
+    //Updates the maximum distance if the frontier's distance is greater.
+    if (frontierDistance > maxDist) {
+      maxDist = frontierDistance;
     }
     //Adds the distance to the frontier to the sum of distances.
     distanceSum += frontierDistance;
@@ -449,17 +450,25 @@ pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
     distanceSqSum += pow(frontierDistance - distanceMean, 2.0f);
   }
 
-  float distanceVar = pow(distanceSqSum / frontierCells.size(),0.5f);
+  float distanceStd = pow(distanceSqSum / frontierCells.size(), 0.5f);
+}
 
-  cout << "Dist - Sum: " << distanceSum << " - Mean: " << distanceMean << " - Var: " << distanceVar << endl; //###
+//###
+pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
 
+  cout << "START getDebug - " << name << " - (" << posX << "," << posY << ") " << nearDroneWeightMap.size() << endl; //###
 
+  float minTs = numeric_limits<float>::max();
+  float maxTs = 0.0f;
+  float minDist = numeric_limits<float>::max();
+  float maxDist = 0.0f;
+  getFrontierCellStats(minTs, maxTs, minDist, maxDist);
+
+  vector<pair<Cell,float>> cellWeightVector;
+  float cumulativeWeight = 0.0f;
 
   for(auto& frontier : frontierCells) {
-
-    int frontierTimestep = frontier.second;
-
-    if (frontierTimestep == currentTimestep) {
+    int frontierTs = frontier.second;
 
       Cell frontierCell = intToCell(frontier.first);
       float frontierDistance = getDistToDrone(frontierCell);
@@ -474,17 +483,29 @@ pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
         float bearingDiff = max(frontierBearing, nearDroneWeightMap[i].first) - min(frontierBearing, nearDroneWeightMap[i].first);
         float droneDist = nearDroneWeightMap[i].second;
         float droneDistWeight = pow(communicationRadius - droneDist, 2.0f); //###change to search radius eventualy with main.cpp communicate.
-
-        const float std = M_PI / 8;
-        const float mean = 0.0f;
-        float pdf = 1.0f - normalDistribution(bearingDiff, mean, std);
+        float pdf = 1.0f - normalDistribution(bearingDiff, 0.0f, M_PI / 8); //###
         bearingWeight *= pdf;
       }
+      //bearing weight can be negative. ###q
 
-      cout << "(" << frontierCell.x << "," << frontierCell.y << ") - TS: " << frontierTimestep << " Dist: " << frontierDistance << " Bearing: " << frontierBearing << " Weight: " << bearingWeight << endl;
+      float distWeight = 1.0f - ((frontierDistance - minDist) / (maxDist - minDist));
+      float tsWeight = (float)(frontierTs - minTs) / (float)(maxTs - minTs);
+      float weight = pow(distWeight, 1.0f) * pow(tsWeight, 1.0f) * pow(bearingWeight, 1.0f);
+      cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
 
-    }
+      cumulativeWeight += weight;
+      cellWeightVector.push_back(make_pair(frontierCell,cumulativeWeight));
   }
+
+
+  float rand = static_cast<float>(rand())/(static_cast<float>(RAND_MAX/cumulativeWeight));
+  cout << rand << endl;
+
+  //create cumulative weight vector
+  //random
+  //choose cell.
+
+
 }
 
 //###
@@ -748,7 +769,6 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
     //Iterate over each neighbour.
     for (auto const& neighbour : neighbours) {
-      //###//###cout << "&7" << endl;
       int neighbourI = cellToInt(neighbour);
 
       //Skip neighbour cell if it has previously been evaluated.
@@ -814,7 +834,6 @@ void Drone::process() {
   findFrontierCells(buffers.first, buffers.second);
   recordConfiguration();
   nearDrones.clear();
-  cout << name << ":" << nearDrones.size() << endl; //###
 }
 
 //Outputs drone statistics to the console.

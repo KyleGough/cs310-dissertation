@@ -54,6 +54,7 @@ private:
   void updateInternalMap(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   void findFrontierCells(vector<SenseCell> freeCellBuffer, vector<SenseCell> occupiedCellBuffer);
   vector<pair<float,float>> getNearDroneWeightMap();
+  void getFrontierCellStats(float &minTs, float &maxTs, float &minDist, float &maxDist);
   pair<Cell,int> getBestFrontier(vector<pair<float,float>> nearDroneWeightMap);
   pair<Cell,int> getDebug(vector<pair<float,float>> nearDroneWeightMap); //###
   pair<Cell,int> getNearestFrontier();
