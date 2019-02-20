@@ -238,7 +238,7 @@ Cell findStartCell() {
 			}
 		}
 	}
-	cout << "[Start] - (" << startCell.x << "," << startCell.y << ") - Count: " << max << "." << endl; //###DEBUG
+	cout << "[Start] - (" << startCell.x << "," << startCell.y << ") - Count: " << max << "." << endl;
 	return startCell;
 }
 
@@ -417,8 +417,8 @@ void communicate(int a, int b) {
 
 	//Check to see if enough time has elapsed between communications with drones a and b.
 	if (droneList[a].allowCommunication(b)) {
-		droneList[a].combineMaps(droneList[b].internalMap, b);
-		droneList[b].combineMaps(droneList[a].internalMap, a);
+		droneList[a].combineMaps(droneList[b].internalMap, droneList[b].frontierCells, b);
+		droneList[b].combineMaps(droneList[a].internalMap, droneList[a].frontierCells, a);
 	}
 }
 
@@ -960,14 +960,13 @@ void setCameraView() {
 	}
 }
 
-//###
+//Initialises the set of drones.
 void droneListInit() {
 	droneList.clear();
 	string droneNames[9] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota"};
-	int droneMethod[9] = {2,2,2,2,2,2,2,2,2}; //###frontier selection, for debug atm.
 	for (size_t i = 0; i < Drone::droneCount; i++) {
 		Drone newDrone;
-		newDrone.init(i, startCell.x, startCell.y, droneNames[i], droneMethod[i]);
+		newDrone.init(i, startCell.x, startCell.y, droneNames[i]);
 		droneList.push_back(newDrone);
 	}
 }
@@ -1010,7 +1009,7 @@ void drawDronePath() {
 	}
 }
 
-//###
+//Idle loop. Processes drone functions every timestep.
 void idle() {
 	if (!paused) {
 		//2500 Microsecond pause.
@@ -1027,7 +1026,7 @@ void idle() {
 	}
 }
 
-//###
+//Displays the cave, drones, text, etc on screen.
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);
@@ -1139,16 +1138,6 @@ void keyboardInput(unsigned char key, int, int) {
 		//Show/Hide Controls.
 		case 'h':
 		case 'H': ctrlHidden = !ctrlHidden; break;
-		//DEBUG###
-		case 'e':
-			cout << Drone::normalDistribution(M_PI, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 2.0f, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 4.0f, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 8.0f, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 8.0f, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 16.0f, 0, M_PI / 8.0f) << endl;
-			cout << Drone::normalDistribution(M_PI / 32.0f, 0, M_PI / 8.0f) << endl;
-			break;
 	}
 	glutPostRedisplay();
 }

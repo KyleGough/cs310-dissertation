@@ -36,9 +36,8 @@ float posX; //Current x position in the cave.
 float posY; //Current y position in the cave.
 float bearing; //0 -> Facing North.
 bool complete; //Has finished exploration.
-int frontierChoiceMethod; //Method of frontier selection.
 vector<vector<int>> internalMap; //Drone's identified cells of the cave.
-map<int, int> frontierCells; //Free cells that are adjacent to unknowns.
+map<int,int> frontierCells; //Free cells that are adjacent to unknowns.
 vector<DroneConfig> pathList; //List of drone configurations for each timestep.
 int currentTimestep; //Current timestep used to mark when frontiers were last identified.
 pair<Cell,int> currentTarget; //Cell the drone is navigating to and the timestep in which it was identified.
@@ -67,13 +66,12 @@ void Drone::setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave
 }
 
 //Initalises the drone's starting position, name and internal map.
-void Drone::init(int _id, float x, float y, string _name, int _frontierChoiceMethod) {
+void Drone::init(int _id, float x, float y, string _name) {
   //Set given parameters.
   id = _id;
   posX = x;
   posY = y;
   name = _name;
-  frontierChoiceMethod = _frontierChoiceMethod;
   //Other data member defaults.
   bearing = 0.0f; //Facing east.
   complete = false;
@@ -361,7 +359,7 @@ void Drone::addNearDrone(float x, float y) {
   nearDrones.push_back(make_pair(x,y));
 }
 
-//###
+//For each nearby drone calculates the distance and bearing.
 vector<pair<float,float>> Drone:: getNearDroneWeightMap() {
 
   vector<pair<float,float>> nearDroneWeight;
@@ -386,24 +384,7 @@ vector<pair<float,float>> Drone:: getNearDroneWeightMap() {
   return nearDroneWeight;
 }
 
-//Finds the best frontier cell to navigate to.
-pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightMap) {
-  switch (frontierChoiceMethod) {
-    case 0:
-      return getNearestFrontier();
-    case 1:
-      return getLatestFrontier();
-    case 2:
-      if (nearDroneWeightMap.size() == 0) {
-        return getLatestFrontier();
-      }
-      else {
-        return getDebug(nearDroneWeightMap); //###
-      }
-  }
-}
-
-//###
+//Gets the probability density of a given normal distribution.
 float Drone::normalDistribution(float x, float mean, float std) {
   float var = pow(std, 2.0f);
   float coeff = 1.0f / (pow(2 * M_PI * var, 0.5f));
@@ -411,13 +392,9 @@ float Drone::normalDistribution(float x, float mean, float std) {
   return coeff * exp(exponent);
 }
 
-//###
+//Finds the min/max distance and timestep for each frontier.
 void Drone::getFrontierCellStats(float &minTs, float &maxTs, float &minDist, float &maxDist) {
 
-  //float minTimestep = numeric_limits<int>::max();
-  //float maxTimestep = 0;
-  //float minDistance = numeric_limits<float>::max();
-  //float maxDistance = 0.0f;
   float distanceSum = 0.0f;
 
   //Gets the maximum timestep and minimum distance in the frontier cell list.
@@ -457,8 +434,12 @@ void Drone::getFrontierCellStats(float &minTs, float &maxTs, float &minDist, flo
   float distanceStd = pow(distanceSqSum / frontierCells.size(), 0.5f);
 }
 
-//###
-pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
+//Finds the best frontier cell to navigate to.
+pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightMap) {
+
+  if (nearDroneWeightMap.size() == 0) {
+    return getLatestFrontier();
+  }
 
   cout << "START getDebug - " << name << " - (" << posX << "," << posY << ") " << nearDroneWeightMap.size() << endl; //###
 
@@ -486,12 +467,13 @@ pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
     for (size_t i = 0; i < nearDroneWeightMap.size(); i++) {
       float bearingDiff = max(frontierBearing, nearDroneWeightMap[i].first) - min(frontierBearing, nearDroneWeightMap[i].first);
       float droneDist = nearDroneWeightMap[i].second;
-      float droneDistWeight = pow(communicationRadius - droneDist, 2.0f); //###change to search radius eventualy with main.cpp communicate.
+      float droneDistWeight = pow(communicationRadius - droneDist, 2.0f);
       float pdf = 1.0f - normalDistribution(bearingDiff, 0.0f, M_PI / 8); //###
       bearingWeight *= pdf;
     }
+    //Corrects weight if negative.
     if (bearingWeight < 0.0f) { bearingWeight = 0.0f; }
-    //bearing weight can be negative. ###q
+
 
     float distRange = maxDist - minDist;
     float distWeight;
@@ -532,7 +514,6 @@ pair<Cell,int> Drone::getDebug(vector<pair<float,float>> nearDroneWeightMap) {
   }
 }
 
-//###
 //Gets the latest frontier cell added to the frontier list. //###
 pair<Cell,int> Drone::getLatestFrontier() {
 
@@ -565,7 +546,7 @@ pair<Cell,int> Drone::getLatestFrontier() {
   return make_pair(bestFrontier, ts);
 }
 
-//Gets the nearest frontier cell to the drone's current position.
+//Gets the nearest frontier cell to the drone's current position. //###
 pair<Cell,int> Drone::getNearestFrontier() {
   float bestDist = numeric_limits<float>::max();
   Cell bestFrontier;
@@ -694,8 +675,6 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
 
-  //###cout << "Start (" << start.x << "," << start.y << ") Dest: (" << dest.x << "," << dest.y << ")" << endl; //###
-
   //If start cell is the same as the destination.
   if (start == dest) {
     vector<Cell> single;
@@ -794,7 +773,7 @@ vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
   return null;
 }
 
-//###
+//Processes the drone's movement, sensing, frontier identification and selection for one timestep.
 void Drone::process() {
 
   //###
@@ -811,10 +790,8 @@ void Drone::process() {
 
   //If current target has been discovered.
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier) {
-    bool newTargetFound = false;
-
-    //###
     vector<pair<float,float>> nearDroneWeightMap = getNearDroneWeightMap();
+    bool newTargetFound = false;
 
     while (!newTargetFound) {
       currentTarget = getBestFrontier(nearDroneWeightMap);
@@ -843,9 +820,9 @@ void Drone::process() {
 
 //Outputs drone statistics to the console.
 void Drone::outputStatistics() {
-  //###cout << "[" << name << "] - Search Complete." << endl;
-  //###cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
-  //###cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
+  cout << "[" << name << "] - Search Complete." << endl;
+  cout << "[" << name << "] - Distance Travelled: (" << totalTravelled << ") - Timesteps: (" << currentTimestep << ")" << endl;
+  cout << "[" << name << "] - Free Cells: (" << freeCount << ") - Occupied Cells: (" << occupiedCount << ")" << endl;
 }
 
 //Check to see if enough time has elapsed to allow inter-drone communication.
@@ -854,7 +831,7 @@ bool Drone::allowCommunication(int x) {
 }
 
 //Merges the drone's internal map with another drone's map.
-void Drone::combineMaps(vector<vector<int>> referenceMap, int droneID) {
+void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> referenceFrontierMap, int droneID) {
 
   vector<Cell> frontierCheck; //List of cells to check if they are frontiers.
   lastCommunication[droneID] = currentTimestep;
@@ -913,25 +890,25 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, int droneID) {
     int x = cell.x;
     int y = cell.y;
     int i = y * caveWidth + x; //Dictionary key for the cell mapped into 1D.
+    int ts = referenceFrontierMap[i];
 
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = currentTimestep;
+      frontierCells[i] = ts; //###
     }
     else if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = currentTimestep;
+      frontierCells[i] = ts; //###
     }
     else if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = currentTimestep;
+      frontierCells[i] = ts; //###
     }
     else if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = currentTimestep;
+      frontierCells[i] = ts; //###
     }
   }
-
 }
 
 //Outputs drone statistics as a vector string.
@@ -945,9 +922,3 @@ vector<string> Drone::getStatistics() {
   output.push_back(to_string(complete));
   return output;
 }
-
-
-
-//###
-//If drone-to-drone collision avoidance becomes too tough.
-//Allow them to pass through each other, saying they take different altitudes.

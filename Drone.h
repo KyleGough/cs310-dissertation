@@ -18,14 +18,15 @@ public:
   float bearing;
   bool complete;
   vector<vector<int>> internalMap;
+  map<int,int> frontierCells;
   vector<DroneConfig> pathList;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
-  void init(int _id, float x, float y, string _name, int _frontierChoiceMethod);
+  void init(int _id, float x, float y, string _name);
   void setPosition(float x,  float y);
   void process();
   bool allowCommunication(int x);
-  void combineMaps(vector<vector<int>> referenceMap, int droneID);
+  void combineMaps(vector<vector<int>> referenceMap, map<int,int> referenceFrontierMap, int droneID);
   vector<string> getStatistics();
   void addNearDrone(float x, float y);
   static float normalDistribution(float x, float mean, float std); //###
@@ -36,7 +37,6 @@ private:
   static vector<vector<int>> cave;
   int id;
   int currentTimestep;
-  map<int, int> frontierCells;
   pair<Cell,int> currentTarget;
   vector<Cell> targetPath;
   float totalTravelled;
@@ -44,7 +44,6 @@ private:
   int occupiedCount;
   int commFreeCount;
   int commOccupiedCount;
-  int frontierChoiceMethod;
   vector<int> lastCommunication;
   vector<pair<float,float>> nearDrones;
   //Member functions.
@@ -56,7 +55,6 @@ private:
   vector<pair<float,float>> getNearDroneWeightMap();
   void getFrontierCellStats(float &minTs, float &maxTs, float &minDist, float &maxDist);
   pair<Cell,int> getBestFrontier(vector<pair<float,float>> nearDroneWeightMap);
-  pair<Cell,int> getDebug(vector<pair<float,float>> nearDroneWeightMap); //###
   pair<Cell,int> getNearestFrontier();
   pair<Cell,int> getLatestFrontier();
   float getDistToDrone(Cell dest);
