@@ -19,6 +19,7 @@
 #include "Cell.h" //Cell struct.
 #include "Visuals.h" //Lighting and Materials.
 #include "Drone.h" //Drone object and functions.
+#include "Config.h"
 #include "MapCell.h"
 using namespace std;
 
@@ -33,6 +34,7 @@ const int deathThreshold = 4;
 const int deathChance = 100;
 const int birthChance = 100;
 const float depth = -1.0f;
+vector<vector<int>> presets; //List of cave presets obtained from the config file.
 
 //Cave.
 int currentCave[caveWidth][caveHeight];
@@ -341,6 +343,11 @@ void generateCave(float noiseOffsetX, float noiseOffsetY, float fillPercentage, 
 
 	//Initialises the cave dimensions and contents.
 	Drone::setParams(caveWidth, caveHeight, caveVector);
+}
+
+//Generates a cave from a preset read from a config file.
+void generatePresetCave(vector<int> preset) {
+	generateCave(preset[0], preset[1], preset[2], preset[3], preset[4]);
 }
 
 //Generates a cave with no inaccessible areas, no non-border connected occupied cells and smoothed.
@@ -1168,23 +1175,23 @@ void specialKeyInput(int key, int x, int y) {
 		//Cave Generation Presets.
 		case GLUT_KEY_F1: //Jagged cave.
 			cout << "[Preset 1]" << endl;
-			generateCave(42435, 6786, 49, 88, 2);
+			generatePresetCave(presets[0]);
 			break;
 		case GLUT_KEY_F2:
 			cout << "[Preset 2]" << endl;
-			generateCave(3312, 89324, 49, 53, 7);
+			generatePresetCave(presets[1]);
 			break;
 		case GLUT_KEY_F3:
 			cout << "[Preset 3]" << endl;
-			generateCave(45666, 90748, 53, 34, 9);
+			generatePresetCave(presets[2]);
 			break;
 		case GLUT_KEY_F4:
 			cout << "[Preset 4]" << endl;
-			generateCave(33229, 98110, 50, 43, 2);
+			generatePresetCave(presets[3]);
 			break;
 		case GLUT_KEY_F5:
 			cout << "[Preset 5]" << endl;
-			generateCave(42435, 6786, 49, 88, 2);
+			generatePresetCave(presets[4]);
 			break;
 	}
 	glutPostRedisplay();
@@ -1207,6 +1214,21 @@ void init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
+
+	//Reads config file for default values.
+	vector<int> presetSing;
+	presetSing.push_back(0);
+	presetSing.push_back(0);
+	presetSing.push_back(50);
+	presetSing.push_back(50);
+	presetSing.push_back(10);
+	presets.push_back(presetSing);
+	presets.push_back(presetSing);
+	presets.push_back(presetSing);
+	presets.push_back(presetSing);
+	presets.push_back(presetSing);
+
+	Config::readConfig(presets); //###
 }
 
 int main(int argc, char* argv[]) {

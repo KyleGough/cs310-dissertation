@@ -1,0 +1,52 @@
+#Config File
+#Lines starting with # are treated as comments.
+#Created by Kyle Gough.
+
+
+
+
+#------------------------------------------------------------------------------#
+#Drone communication method.
+#{LOCAL, GLOBAL}
+COMM_METHOD:LOCAL
+#------------------------------------------------------------------------------#
+#Preset 1 (F1).
+#{OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}
+P1_X:42435
+P1_Y:6786
+P1_FP:49
+P1_NS:88
+P1_IT:2
+#------------------------------------------------------------------------------#
+#Preset 2 (F2).
+#{OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}
+P2_X:3312
+P2_Y:89324
+P2_FP:49
+P2_NS:53
+P2_IT:7
+#------------------------------------------------------------------------------#
+#Preset 3 (F3).
+#{OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}
+P3_X:45666
+P3_Y:90748
+P3_FP:53
+P3_NS:34
+P3_IT:9
+#------------------------------------------------------------------------------#
+#Preset 4 (F4).
+#{OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}
+P4_X:33229
+P4_Y:98110
+P4_FP:50
+P4_NS:43
+P4_IT:2
+#------------------------------------------------------------------------------#
+#Preset 5 (F5).
+#{OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}
+P5_X:42435
+P5_Y:6786
+P5_FP:49
+P5_NS:88
+P5_IT:20
+#------------------------------------------------------------------------------#
