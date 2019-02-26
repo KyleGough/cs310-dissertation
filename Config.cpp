@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 #include "Config.h"
+#include "CommunicationMethod.h"
 using namespace std;
 
-void Config::readConfig(vector<vector<int>> &presets) {
+void Config::readConfig(vector<vector<int>> &presets, CommunicationMethod &method) {
 
 	ifstream configFile;
 	string configLine;
@@ -28,7 +29,11 @@ void Config::readConfig(vector<vector<int>> &presets) {
 		string s = splitLine[0];
 
 		try {
-			if (s == "P1_X") { presets[0][0] = getInt(splitLine[1]); }
+			if (s == "COMM_METHOD") {
+				if (splitLine[1] == "LOCAL") { method = Local; }
+				if (splitLine[1] == "GLOBAL") { method = Global; }
+			}
+			else if (s == "P1_X") { presets[0][0] = getInt(splitLine[1]); }
 			else if (s == "P1_Y") { presets[0][1] = getInt(splitLine[1]); }
 			else if (s == "P1_FP") { presets[0][2] = getInt(splitLine[1]); }
 			else if (s == "P1_NS") { presets[0][3] = getInt(splitLine[1]); }

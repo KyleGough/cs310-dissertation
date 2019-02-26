@@ -19,8 +19,9 @@
 #include "Cell.h" //Cell struct.
 #include "Visuals.h" //Lighting and Materials.
 #include "Drone.h" //Drone object and functions.
-#include "Config.h"
-#include "MapCell.h"
+#include "Config.h" //Custom preset configurations.
+#include "MapCell.h" //Cave cell type.
+#include "CommunicationMethod.h" //Communication method enum.
 using namespace std;
 
 //Cave Properties.
@@ -52,8 +53,7 @@ int cameraView = -1; //Overview camera view.
 //Drone.
 vector<Drone> droneList;
 bool paused = true;
-enum CommunicationMethod { Local, Global };
-CommunicationMethod commMethod = Local; //###
+CommunicationMethod commMethod = Local;
 
 //Controls.
 bool ctrlHidden = false;
@@ -1228,7 +1228,7 @@ void init() {
 	presets.push_back(presetSing);
 	presets.push_back(presetSing);
 
-	Config::readConfig(presets); //###
+	Config::readConfig(presets, commMethod);
 }
 
 int main(int argc, char* argv[]) {
