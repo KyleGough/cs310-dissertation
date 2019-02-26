@@ -54,6 +54,7 @@ int cameraView = -1; //Overview camera view.
 vector<Drone> droneList;
 bool paused = true;
 CommunicationMethod commMethod = Local;
+bool showPath = true;
 
 //Controls.
 bool ctrlHidden = false;
@@ -540,11 +541,12 @@ void displayControls() {
 	Draw::drawText(leftPad, topPad - 250, 0.15f, (char *)"Scroll - Zoom", textColour);
 	Draw::drawText(leftPad, topPad - 300, 0.15f, (char *)"r - Generate Cave", textColour);
 	Draw::drawText(leftPad, topPad - 350, 0.15f, (char *)"t - Toggle Smooth Cells.", textColour);
-	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"v - Change Camera View.", textColour);
-	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
-	Draw::drawText(leftPad, topPad - 500, 0.15f, (char *)"F1-F5 - Load Cave Presets.", textColour);
-	Draw::drawText(leftPad, topPad - 550, 0.15f, (char *)"1-9 - Start simulation with N drones.", textColour);
-	Draw::drawText(leftPad, topPad - 700, 0.15f, (char *)"H - Show/Hide Controls", textColour);
+	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"p - Toggle Drone Paths.", textColour);
+	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"v - Change Camera View.", textColour);
+	Draw::drawText(leftPad, topPad - 500, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
+	Draw::drawText(leftPad, topPad - 550, 0.15f, (char *)"F1-F5 - Load Cave Presets.", textColour);
+	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"1-9 - Start simulation with N drones.", textColour);
+	Draw::drawText(leftPad, topPad - 750, 0.15f, (char *)"H - Show/Hide Controls", textColour);
 	displayStatistics(textColour);
 }
 
@@ -1058,7 +1060,8 @@ void display() {
 	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
 	//Draws discovered cells by the drones and their paths.
 	drawDiscoveredCells();
-	drawDronePath();
+	//Draws the drone paths.
+	if (showPath) { drawDronePath(); }
 
 	//Dark translucent overlay onto cave to make controls mode visible.
 	if (!ctrlHidden) {
@@ -1124,6 +1127,8 @@ void keyboardInput(unsigned char key, int, int) {
 			cout << "[Random]" << endl;
 			generateRandomCave();
 			break;
+		case 'P':
+		case 'p': showPath = !showPath; break;
 		//Pauses the simulation.
 		case ' ': if (Drone::droneCount != -1) { paused = !paused; } break;
 		//Smoothing.

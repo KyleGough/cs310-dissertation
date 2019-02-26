@@ -66,5 +66,6 @@ private:
   int cellToInt(Cell src);
   Cell intToCell(int src);
   vector<Cell> getAStarPath(map<int,int> previous, int current);
+  void getNewTarget();
   void outputStatistics();
 };
