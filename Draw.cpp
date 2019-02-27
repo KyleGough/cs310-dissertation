@@ -110,7 +110,7 @@ void Draw::drawText(int x, int y, float scale, const char* text, const float* te
 }
 
 //Draws a drone at a given position.
-void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name, float bearing) {
+void Draw::drawDrone(float x, float y, float depth, float searchRadius, string name, float bearing, Cell currentTarget, bool showTarget) {
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
 	glColor4f(1.0f, 0.0f, 0.0f, 1.0f); //Red.
@@ -159,8 +159,23 @@ void Draw::drawDrone(float x, float y, float depth, float searchRadius, string n
 	//Search Range.
 	drawDroneSearchingRange(searchRadius, depth / 2.0f);
 
-	glEnable(GL_LIGHTING);
 	glPopMatrix();
+
+	//Target.
+	if (showTarget) {
+		glPushMatrix();
+		glColor4f(1.0f, 1.0f, 0.0f, 0.8f);
+		glTranslatef((float)currentTarget.x, (float)currentTarget.y, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glVertex3f(-0.5f, -0.5f, depth + 0.01f);
+		glVertex3f(0.5f, -0.5f, depth + 0.01f);
+		glVertex3f(-0.5f, 0.5f, depth + 0.01f);
+		glVertex3f(0.5f, 0.5f, depth + 0.01f);
+		glEnd();
+		glPopMatrix();
+	}	
+
+	glEnable(GL_LIGHTING);
 }
 
 //Draws the bounding box of the drone.

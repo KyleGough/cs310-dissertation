@@ -951,7 +951,7 @@ void renderCaveSmooth() {
 void renderDrone() {
 	//Draws a drone at the starting location.
 	for (size_t i = 0; i < droneList.size(); i++) {
-		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRadius, droneList[i].name, droneList[i].bearing);
+		Draw::drawDrone(droneList[i].posX, droneList[i].posY, depth, Drone::searchRadius, droneList[i].name, droneList[i].bearing, droneList[i].currentTarget.first, (cameraView == i));
 	}
 }
 

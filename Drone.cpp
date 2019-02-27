@@ -107,22 +107,7 @@ void Drone::init(int _id, float x, float y, string _name) {
   pair<vector<SenseCell>,vector<SenseCell>> buffers = sense();
   updateInternalMap(buffers.first, buffers.second);
   findFrontierCells(buffers.first, buffers.second);
-
-  bool newTargetFound = false;
-  while (!newTargetFound) {
-    vector<pair<float,float>> null;
-    currentTarget = getBestFrontier(null);
-    targetPath = getPathToTarget(currentTarget);
-    //Target unreachable.
-    if (targetPath.size() == 0) {
-      frontierCells.erase(currentTarget.first.y * caveWidth + currentTarget.first.x);
-      internalMap[currentTarget.first.x][currentTarget.first.y] = Free;
-    }
-    else {
-      newTargetFound = true;
-    }
-  }
-
+  getNewTarget();
   recordConfiguration(); //Records the initial drone configuration.
 }
 
@@ -492,7 +477,7 @@ pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightM
     }
 
     float weight = /*pow(distWeight, 2.0f) **/ pow(tsWeight, 6.0f) * pow(bearingWeight, 1.0f);
-    cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
+    //###cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
 
     cumulativeWeight += weight;
     cellWeightVector.push_back(make_tuple(frontierCell, frontierTs, cumulativeWeight));
@@ -500,13 +485,13 @@ pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightM
 
 
   float randWeight = static_cast<float>(rand())/(static_cast<float>(RAND_MAX/cumulativeWeight));
-  cout << "C: " << cumulativeWeight << " R: " << randWeight << endl;
+  //###cout << "C: " << cumulativeWeight << " R: " << randWeight << endl;
 
   for(auto& frontier : cellWeightVector) {
     Cell c; int ts; float w;
     tie(c,ts,w) = frontier;
     if (randWeight <= w) {
-      cout << "Choice: (" << c.x << "," << c.y << ") - " << ts << endl;
+      //###cout << "Choice: (" << c.x << "," << c.y << ") - " << ts << endl;
       return make_pair(c,ts);
     }
   }
@@ -603,7 +588,7 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
   }
   //If the target frontier was sensed in a previous timestep.
   else {
-    //Backtrack.
+    /*//Backtrack.
     Cell midPos;
 
     //Gets the position from where the target frontier was last observed from.
@@ -621,7 +606,11 @@ vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
     if (pathB.size() == 0) { return pathB; } //Target unreachable.
 
     pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
-    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.
+    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.*/
+
+    //###???
+    vector<Cell> pathA = searchAStar(target.first, startPos);
+
     return pathA;
   }
 }
@@ -672,6 +661,12 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
+
+  //###
+  if (id == 0) {
+    cout << "ASTAR: (" << start.x << "," << start.y << ") -> (" << dest.x << "," << dest.y << ")" << endl;
+  }
+
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -790,6 +785,7 @@ void Drone::process() {
   //If current target has been discovered.
   if (internalMap[currentTarget.first.x][currentTarget.first.y] != Frontier || hasCommunicated) {
     getNewTarget();
+    hasCommunicated = false;
   }
   else {
     setPosition(targetPath.front().x, targetPath.front().y);
@@ -801,11 +797,14 @@ void Drone::process() {
   findFrontierCells(buffers.first, buffers.second);
   recordConfiguration();
   nearDrones.clear();
-  hasCommunicated = false;
 }
 
 //Gets a new target from the list of frontier cells accounting for nearby drones and known mapping.
 void Drone::getNewTarget() {
+  //###
+  cout << "NEW TARGET" << endl;
+  cout << "POS [" << posX << "," << posY << "] TAR [" << currentTarget.first.x << "," << currentTarget.first.y << "]" << endl;
+
   vector<pair<float,float>> nearDroneWeightMap = getNearDroneWeightMap();
   bool newTargetFound = false;
 
@@ -821,6 +820,14 @@ void Drone::getNewTarget() {
       newTargetFound = true;
     }
   }
+
+  //###
+  cout << "Path:";
+  for (auto& a : targetPath) {
+    cout << " (" << a.x << "," << a.y << ")";
+  }
+  cout << endl;
+
 }
 
 //Outputs drone statistics to the console.

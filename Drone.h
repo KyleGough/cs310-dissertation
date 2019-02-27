@@ -20,6 +20,7 @@ public:
   vector<vector<int>> internalMap;
   map<int,int> frontierCells;
   vector<DroneConfig> pathList;
+  pair<Cell,int> currentTarget;
   //Member Functions.
   static void setParams(int _caveWidth, int _caveHeight, vector<vector<int>> _cave);
   void init(int _id, float x, float y, string _name);
@@ -37,7 +38,6 @@ private:
   static vector<vector<int>> cave;
   int id;
   int currentTimestep;
-  pair<Cell,int> currentTarget;
   vector<Cell> targetPath;
   float totalTravelled;
   int freeCount;
