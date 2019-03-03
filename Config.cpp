@@ -3,11 +3,12 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include "Config.h"
 #include "CommunicationMethod.h"
 using namespace std;
 
-void Config::readConfig(vector<vector<int>> &presets, CommunicationMethod &method) {
+void Config::readConfig(vector<vector<int>> &presets, CommunicationMethod &method, float &searchR, float &commR) {
 
 	ifstream configFile;
 	string configLine;
@@ -58,17 +59,20 @@ void Config::readConfig(vector<vector<int>> &presets, CommunicationMethod &metho
 			else if (s == "P5_FP") { presets[4][2] = getInt(splitLine[1]); }
 			else if (s == "P5_NS") { presets[4][3] = getInt(splitLine[1]); }
 			else if (s == "P5_IT") { presets[4][4] = getInt(splitLine[1]); }
+			else if (s == "SEARCH_R") { searchR = getInt(splitLine[1]); }
+			else if (s == "COMM_R") { commR = getInt(splitLine[1]); }
 		}
-		catch (const invalid_argument& e) {
+		catch (const invalid_argument &e) {
 			cout << "Invalid argument on Line (" << lineNumber << ")" << endl;
 		}
-		catch (const out_of_range& e) {
+		catch (const out_of_range &e) {
 			cout << "Value out of range on Line (" << lineNumber << ")" << endl;
 		}
 
 
 	}
 
+	cout << "Config file processed." << endl;
 	configFile.close();
 }
 

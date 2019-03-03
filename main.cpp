@@ -504,6 +504,13 @@ void displayStatistics(const float* textColour) {
 	Draw::drawText(xPad, windowH - (yPad * 9), statSize, ("No. Drones - " + drone).c_str(), textColour);
 	Draw::drawText(xPad, windowH - (yPad * 10), statSize, ("Communication - " + comm).c_str(), textColour);
 
+	//Toggles.
+	string pathState = (showPath) ? "ON" : "OFF";
+	string smoothState = (caveSmooth) ? "ON" : "OFF";
+	Draw::drawText(xPad, windowH - (yPad * 12), statSize, "Toggles", textColour);
+	Draw::drawText(xPad, windowH - (yPad * 13), statSize, ("Show Paths - " + pathState).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 14), statSize, ("Smooth Cave - " + smoothState).c_str(), textColour);
+
 	//Overview.
 	if (cameraView == -1) {
 		//Camera Mode.
@@ -1233,7 +1240,7 @@ void init() {
 	presets.push_back(presetSing);
 	presets.push_back(presetSing);
 
-	Config::readConfig(presets, commMethod);
+	Config::readConfig(presets, commMethod, Drone::searchRadius, Drone::communicationRadius);
 }
 
 int main(int argc, char* argv[]) {
