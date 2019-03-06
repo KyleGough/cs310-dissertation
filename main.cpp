@@ -32,8 +32,6 @@ const int border = 3; //Padding of the cave border on the x-axis.
 //Generation Parameters.
 const int birthThreshold = 4;
 const int deathThreshold = 4;
-const int deathChance = 100;
-const int birthChance = 100;
 const float depth = -1.0f;
 vector<vector<int>> presets; //List of cave presets obtained from the config file.
 
@@ -60,11 +58,6 @@ bool showPath = true;
 bool ctrlHidden = false;
 
 
-//Using a chance value, outputs true if a random value is smaller than the chance.
-bool thresholdRandom(int chance) {
-	return rand() % 100 < chance;
-}
-
 int getNeighbourCount(int x, int y) {
 	int count = 0;
 	for (size_t i = x - 1; i <= x + 1; i++) {
@@ -83,10 +76,10 @@ void smoothCave(int iterations) {
 		for (size_t y = border; y < caveHeight - border; y++) { //For each row.
 			for (size_t x = border; x < caveWidth - border; x++) { //For each column.
 				int neighbours = getNeighbourCount(x, y);
-				if (neighbours > birthThreshold && thresholdRandom(birthChance)) {
+				if (neighbours > birthThreshold) {
 					tempCave[x][y] = Free; //Cell is born.
 				}
-				else if (neighbours < deathThreshold && thresholdRandom(deathChance)) {
+				else if (neighbours < deathThreshold) {
 					tempCave[x][y] = Occupied; //Cell dies.
 				}
 				else {
@@ -1086,7 +1079,7 @@ void display() {
 
 	//Displays control text on the screen.
 	if (ctrlHidden) {
-		displayStatistics(textColour);
+		//###displayStatistics(textColour);
 	}
 	else { //Display control screen.
 		displayControls();

@@ -476,8 +476,10 @@ pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightM
       tsWeight = (float)(frontierTs - minTs) / tsRange;
     }
 
-    float weight = /*pow(distWeight, 2.0f) **/ pow(tsWeight, 6.0f) * pow(bearingWeight, 1.0f);
-    //###cout << "(" << frontierCell.x << "," << frontierCell.y << ") [" << weight << "] - TS: " << tsWeight << " Dist: " << distWeight << " Near: " << bearingWeight << endl;
+    //###
+    //Original: 0,6,1.
+    //Possible improvement: 1,3,1.
+    float weight = pow(distWeight, 1.0f) * pow(tsWeight, 2.0f) * pow(bearingWeight, 1.0f);
 
     cumulativeWeight += weight;
     cellWeightVector.push_back(make_tuple(frontierCell, frontierTs, cumulativeWeight));
@@ -485,13 +487,11 @@ pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightM
 
 
   float randWeight = static_cast<float>(rand())/(static_cast<float>(RAND_MAX/cumulativeWeight));
-  //###cout << "C: " << cumulativeWeight << " R: " << randWeight << endl;
 
   for(auto& frontier : cellWeightVector) {
     Cell c; int ts; float w;
     tie(c,ts,w) = frontier;
     if (randWeight <= w) {
-      //###cout << "Choice: (" << c.x << "," << c.y << ") - " << ts << endl;
       return make_pair(c,ts);
     }
   }
@@ -580,39 +580,8 @@ Cell Drone::getClosestCell(float x, float y) {
 vector<Cell> Drone::getPathToTarget(pair<Cell,int> target) {
   int targetTimestep = target.second;
   Cell startPos = getClosestCell(posX, posY);
-
-  //If the target frontier cell was sensed in the current timestep.
-  if (targetTimestep == currentTimestep) {
-    vector<Cell> path = searchAStar(target.first, startPos); //Gets the path using A*.
-    return path;
-  }
-  //If the target frontier was sensed in a previous timestep.
-  else {
-    /*//Backtrack.
-    Cell midPos;
-
-    //Gets the position from where the target frontier was last observed from.
-    for (vector<DroneConfig>::reverse_iterator config = pathList.rbegin(); config != pathList.rend(); ++config) {
-      if (config->timestep == targetTimestep) {
-        midPos = getClosestCell(config->x, config->y);
-        break;
-      }
-    }
-
-    vector<Cell> pathA = searchAStar(midPos, startPos);
-    if (pathA.size() == 0) { return pathA; } //Target unreachable.
-
-    vector<Cell> pathB = searchAStar(target.first, midPos);
-    if (pathB.size() == 0) { return pathB; } //Target unreachable.
-
-    pathB.erase(pathB.begin()); //Removes the first element which is present in both vectors.
-    pathA.insert(pathA.end(), pathB.begin(), pathB.end()); //Concatenates the paths.*/
-
-    //###???
-    vector<Cell> pathA = searchAStar(target.first, startPos);
-
-    return pathA;
-  }
+  vector<Cell> path = searchAStar(target.first, startPos); //Gets the path using A*.
+  return path;
 }
 
 //Maps a cell to an integer value.
@@ -661,12 +630,6 @@ vector<Cell> Drone::getAStarPath(map<int,int> previous, int current) {
 
 //Uses the A* algorithm to find a path between two cells.
 vector<Cell> Drone::searchAStar(Cell start, Cell dest) {
-
-  //###
-  if (id == 0) {
-    cout << "ASTAR: (" << start.x << "," << start.y << ") -> (" << dest.x << "," << dest.y << ")" << endl;
-  }
-
 
   //If start cell is the same as the destination.
   if (start == dest) {
@@ -801,9 +764,6 @@ void Drone::process() {
 
 //Gets a new target from the list of frontier cells accounting for nearby drones and known mapping.
 void Drone::getNewTarget() {
-  //###
-  cout << "NEW TARGET" << endl;
-  cout << "POS [" << posX << "," << posY << "] TAR [" << currentTarget.first.x << "," << currentTarget.first.y << "]" << endl;
 
   vector<pair<float,float>> nearDroneWeightMap = getNearDroneWeightMap();
   bool newTargetFound = false;
@@ -820,13 +780,6 @@ void Drone::getNewTarget() {
       newTargetFound = true;
     }
   }
-
-  //###
-  cout << "Path:";
-  for (auto& a : targetPath) {
-    cout << " (" << a.x << "," << a.y << ")";
-  }
-  cout << endl;
 
 }
 
@@ -920,7 +873,7 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> reference
     }
     else if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = ts; //###
+      frontierCells[i] = ts;
     }
   }
 }
