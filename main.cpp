@@ -12,6 +12,7 @@
 #include <cstring>
 #include <cstdint>
 #include <queue>
+#include <set>
 #include <vector>
 #include <random>
 #include "SimplexNoise.h" //Perlin Noise.
@@ -1079,7 +1080,7 @@ void display() {
 
 	//Displays control text on the screen.
 	if (ctrlHidden) {
-		//###displayStatistics(textColour);
+		displayStatistics(textColour);
 	}
 	else { //Display control screen.
 		displayControls();
