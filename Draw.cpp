@@ -173,7 +173,7 @@ void Draw::drawDrone(float x, float y, float depth, float searchRadius, string n
 		glVertex3f(0.5f, 0.5f, depth + 0.01f);
 		glEnd();
 		glPopMatrix();
-	}	
+	}
 
 	glEnable(GL_LIGHTING);
 }
@@ -211,7 +211,7 @@ void Draw::drawDroneBoundingBox(float depth) {
 
 //Draws a circle indicating the search range of the drone.
 void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
-	glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+	glColor4f(1.0f, 0.0f, 1.0f, 1.0f);
 	glEnable(GL_LINE_SMOOTH);
 	glBegin(GL_LINE_LOOP);
 

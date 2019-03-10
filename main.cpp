@@ -53,10 +53,11 @@ int cameraView = -1; //Overview camera view.
 vector<Drone> droneList;
 bool paused = true;
 CommunicationMethod commMethod = Local;
-bool showPath = true;
 
 //Controls.
 bool ctrlHidden = false;
+bool showPath = true;
+bool showCave = true;
 
 
 int getNeighbourCount(int x, int y) {
@@ -499,11 +500,13 @@ void displayStatistics(const float* textColour) {
 	Draw::drawText(xPad, windowH - (yPad * 10), statSize, ("Communication - " + comm).c_str(), textColour);
 
 	//Toggles.
+	string caveState = (showCave) ? "ON" : "OFF";
 	string pathState = (showPath) ? "ON" : "OFF";
 	string smoothState = (caveSmooth) ? "ON" : "OFF";
 	Draw::drawText(xPad, windowH - (yPad * 12), statSize, "Toggles", textColour);
-	Draw::drawText(xPad, windowH - (yPad * 13), statSize, ("Show Paths - " + pathState).c_str(), textColour);
-	Draw::drawText(xPad, windowH - (yPad * 14), statSize, ("Smooth Cave - " + smoothState).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 13), statSize, ("Show Cave - " + caveState).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 14), statSize, ("Show Paths - " + pathState).c_str(), textColour);
+	Draw::drawText(xPad, windowH - (yPad * 15), statSize, ("Smooth Cave - " + smoothState).c_str(), textColour);
 
 	//Overview.
 	if (cameraView == -1) {
@@ -542,11 +545,12 @@ void displayControls() {
 	Draw::drawText(leftPad, topPad - 250, 0.15f, (char *)"Scroll - Zoom", textColour);
 	Draw::drawText(leftPad, topPad - 300, 0.15f, (char *)"r - Generate Cave", textColour);
 	Draw::drawText(leftPad, topPad - 350, 0.15f, (char *)"t - Toggle Smooth Cells.", textColour);
-	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"p - Toggle Drone Paths.", textColour);
-	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"v - Change Camera View.", textColour);
-	Draw::drawText(leftPad, topPad - 500, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
-	Draw::drawText(leftPad, topPad - 550, 0.15f, (char *)"F1-F5 - Load Cave Presets.", textColour);
-	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"1-9 - Start simulation with N drones.", textColour);
+	Draw::drawText(leftPad, topPad - 400, 0.15f, (char *)"o - Toggle Display Cave.", textColour);
+	Draw::drawText(leftPad, topPad - 450, 0.15f, (char *)"p - Toggle Drone Paths.", textColour);
+	Draw::drawText(leftPad, topPad - 500, 0.15f, (char *)"v - Change Camera View.", textColour);
+	Draw::drawText(leftPad, topPad - 550, 0.15f, (char *)"SPACE - Resume/Pause Simulation.", textColour);
+	Draw::drawText(leftPad, topPad - 600, 0.15f, (char *)"F1-F5 - Load Cave Presets.", textColour);
+	Draw::drawText(leftPad, topPad - 650, 0.15f, (char *)"1-9 - Start simulation with N drones.", textColour);
 	Draw::drawText(leftPad, topPad - 750, 0.15f, (char *)"H - Show/Hide Controls", textColour);
 	displayStatistics(textColour);
 }
@@ -992,14 +996,14 @@ void drawDiscoveredCells() {
 		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f, 0.5f}};
 		//Draws the free and occupied cells of every drone.
 		for (size_t i = 0; i < Drone::droneCount; i++) {
-			Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[i].internalMap, colours);
+			Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[i].internalMap, colours);
 		}
 	}
 	else { //Following particular drone.
 		//Free, Occupied, Frontier colours.
 		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 1.0f, 0.5f}};
 		//Draws the free, occupied and frontier cells of the selected drone.
-		Draw::drawDiscoveredCells(caveWidth, caveHeight, depth, droneList[cameraView].internalMap, colours);
+		Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[cameraView].internalMap, colours);
 	}
 
 }
@@ -1058,7 +1062,7 @@ void display() {
 	//Draws Cave Background then Border then finally the cave structure.
 	Draw::drawBackground(depth, caveWidth, caveHeight);
 	Draw::drawBorder(depth, caveWidth, caveHeight);
-	caveSmooth ? renderCaveSmooth() : renderCaveNormal();
+	if (showCave) { caveSmooth ? renderCaveSmooth() : renderCaveNormal(); }
 	//Draws discovered cells by the drones and their paths.
 	drawDiscoveredCells();
 	//Draws the drone paths.
@@ -1128,6 +1132,8 @@ void keyboardInput(unsigned char key, int, int) {
 			cout << "[Random]" << endl;
 			generateRandomCave();
 			break;
+		case 'O':
+		case 'o': showCave = !showCave; break;
 		case 'P':
 		case 'p': showPath = !showPath; break;
 		//Pauses the simulation.
