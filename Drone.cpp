@@ -837,17 +837,19 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> reference
         if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
         if (j + 1 < caveHeight && internalMap[i][j+1] == Frontier) { frontierCheck.push_back(Cell(i,j+1)); }
       }
+      //###
       else if (referenceMap[i][j] == Frontier && internalMap[i][j] != Free) {
         //Update frontier cell.
         if (internalMap[i][j] == Unknown) {
           freeCount++;
           commFreeCount++;
+          internalMap[i][j] = Free;
+          frontierCheck.push_back(Cell(i,j));
         }
         else if (internalMap[i][j] == Frontier) {
-          frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
+          //###frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
         }
-        internalMap[i][j] = Free;
-        frontierCheck.push_back(Cell(i,j));
+
       }
     }
   }
