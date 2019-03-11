@@ -1055,21 +1055,11 @@ void idle() {
 		//Communication between drones.
 		(commMethod == Local) ? pollLocalCommunication() : pollGlobalCommunication();
 		//Processes each drone.
-		//###
-		int completeCount = 0; //###
-		float distTotal = 0.0f; //###
 		for (size_t i = 0; i < Drone::droneCount; i++) {
 			if (!droneList[i].complete) {
 				droneList[i].process();
 			}
-			else {
-				completeCount++;
-				distTotal+= droneList[i].totalTravelled;
-			}
-		}
-		if (completeCount == Drone::droneCount) {
-			cout << "All complete - Avg: " << distTotal / Drone::droneCount << endl;
-		}
+		}	
 		glutPostRedisplay();
 	}
 }

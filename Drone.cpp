@@ -476,9 +476,6 @@ pair<Cell,int> Drone::getBestFrontier(vector<pair<float,float>> nearDroneWeightM
       tsWeight = (float)(frontierTs - minTs) / tsRange;
     }
 
-    //###
-    //Original: 0,6,1.
-    //Possible improvement: 1,3,1.
     float weight = pow(distWeight, 1.0f) * pow(tsWeight, 2.0f) * pow(bearingWeight, 1.0f);
 
     cumulativeWeight += weight;
@@ -856,7 +853,7 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> reference
 
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = 0; //###
+      frontierCells[i] = 0;
     }
     else if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
