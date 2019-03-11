@@ -13,7 +13,7 @@ COMM_R:10
 #Drone communication method.
 # - Default: LOCAL
 # - {LOCAL, GLOBAL}
-COMM_METHOD:GLOBAL
+COMM_METHOD:LOCAL
 #------------------------------------------------------------------------------#
 #Preset 1 (F1).
 # - {OffsetX, OffsetY, Fill Percentage, Noise Scale, Smoothing Iterations}

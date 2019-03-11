@@ -465,7 +465,31 @@ void pollGlobalCommunication() {
 	//For each unique pair of drones in communication range.
 	for (size_t i = 0; i < Drone::droneCount - 1; i++) {
 		for (size_t j = i + 1; j < Drone::droneCount; j++) {
-			communicate(i,j);
+			float dx = droneList[i].posX - droneList[j].posX;
+			float dy = droneList[i].posY - droneList[j].posY;
+			float dist = pow(pow(dx, 2.0f) + pow(dy, 2.0f), 0.5f);
+			//If distance is small then there can be no obstructions.
+			if (dist <= 1) {
+				droneList[i].addNearDrone(droneList[j].posX, droneList[j].posY);
+				droneList[j].addNearDrone(droneList[i].posX, droneList[i].posY);
+			}
+			else if (dist < Drone::communicationRadius) {
+				int ix = (int)droneList[i].posX;
+				int iy = (int)droneList[i].posY;
+				int jx = (int)droneList[j].posX;
+				int jy = (int)droneList[j].posY;
+				//Checks that there are no obstructions in the path from drone I to J.
+				if (lineOfSightCheck(ix, iy, jx, jy)) {
+					droneList[i].addNearDrone(droneList[j].posX, droneList[j].posY);
+					droneList[j].addNearDrone(droneList[i].posX, droneList[i].posY);
+				}
+			}
+
+			//Check to see if enough time has elapsed between communications with drones a and b.
+			if (droneList[i].allowCommunication(j)) {
+				droneList[i].combineMaps(droneList[j].internalMap, droneList[j].frontierCells, j);
+				droneList[j].combineMaps(droneList[i].internalMap, droneList[i].frontierCells, i);
+			}
 		}
 	}
 }
@@ -996,14 +1020,14 @@ void drawDiscoveredCells() {
 		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f, 0.5f}};
 		//Draws the free and occupied cells of every drone.
 		for (size_t i = 0; i < Drone::droneCount; i++) {
-			Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[i].internalMap, colours);
+			Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[i].internalMap, colours, droneList[i].frontierCells, false);
 		}
 	}
 	else { //Following particular drone.
 		//Free, Occupied, Frontier colours.
 		float colours[3][4] = {{0.0f, 1.0f, 0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 0.5f}, {0.0f, 1.0f, 1.0f, 0.5f}};
 		//Draws the free, occupied and frontier cells of the selected drone.
-		Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[cameraView].internalMap, colours);
+		Draw::drawDiscoveredCells(caveWidth, caveHeight, showCave ? depth : 0.0f, droneList[cameraView].internalMap, colours, droneList[cameraView].frontierCells, true);
 	}
 
 }
@@ -1263,7 +1287,7 @@ int main(int argc, char* argv[]) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowSize(1600, 900);
 	glutInitWindowPosition(25, 25);
-	glutCreateWindow("Cave Generation");
+	glutCreateWindow("Cave Generation and Search Simulation");
 
 	//Event Functions.
 	glutMouseFunc(mouseInput);

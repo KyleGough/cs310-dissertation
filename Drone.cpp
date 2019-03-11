@@ -837,19 +837,12 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> reference
         if (j - 1 >= 0 && internalMap[i][j-1] == Frontier) { frontierCheck.push_back(Cell(i,j-1)); }
         if (j + 1 < caveHeight && internalMap[i][j+1] == Frontier) { frontierCheck.push_back(Cell(i,j+1)); }
       }
-      //###
-      else if (referenceMap[i][j] == Frontier && internalMap[i][j] != Free) {
+      else if (referenceMap[i][j] == Frontier && internalMap[i][j] == Unknown) {
         //Update frontier cell.
-        if (internalMap[i][j] == Unknown) {
-          freeCount++;
-          commFreeCount++;
-          internalMap[i][j] = Free;
-          frontierCheck.push_back(Cell(i,j));
-        }
-        else if (internalMap[i][j] == Frontier) {
-          //###frontierCells.erase(j * caveWidth + i); //Removes the frontier from the frontier cell list.
-        }
-
+        freeCount++;
+        commFreeCount++;
+        internalMap[i][j] = Free;
+        frontierCheck.push_back(Cell(i,j));
       }
     }
   }
@@ -863,19 +856,19 @@ void Drone::combineMaps(vector<vector<int>> referenceMap, map<int,int> reference
 
     if (x - 1 >= 0 && internalMap[x-1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = ts;
+      frontierCells[i] = 0; //###
     }
     else if (x + 1 < caveWidth && internalMap[x+1][y] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = ts;
+      frontierCells[i] = 0;
     }
     else if (y - 1 >= 0 && internalMap[x][y-1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = ts;
+      frontierCells[i] = 0;
     }
     else if (y + 1 < caveHeight && internalMap[x][y+1] == Unknown) {
       internalMap[x][y] = Frontier;
-      frontierCells[i] = ts;
+      frontierCells[i] = 0;
     }
   }
 }

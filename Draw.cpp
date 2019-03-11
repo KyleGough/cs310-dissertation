@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <map>
 #include <string>
 #include "MapCell.h"
 #include "Draw.h"
@@ -223,7 +224,7 @@ void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
 }
 
 //Draws discovered cave cells in a specific colour to indicate type.
-void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave, float colours[][4]) {
+void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vector<vector<int>> cave, float colours[][4], map<int,int> frontierCells, bool showCommFrontiers) {
 	//Iterates over each cell in the cave.
 	for (size_t i = 0; i < caveWidth; i++) {
 		for (size_t j = 0; j < caveHeight; j++) {
@@ -241,7 +242,13 @@ void Draw::drawDiscoveredCells(int caveWidth, int caveHeight, float depth, vecto
 					d = 0.0f;
 					break;
 				case Frontier:
-					glColor4fv(colours[2]);
+					int cellID = j * caveWidth + i;
+					if (showCommFrontiers && frontierCells[cellID] == 0) {
+						glColor4f(0.4f, 0.4f, 0.1f, 1.0f); //Communicated Frontier
+					}
+					else {
+						glColor4fv(colours[2]);
+					}
 					d = depth;
 					break;
 			}
