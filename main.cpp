@@ -325,7 +325,9 @@ void generateCave(float noiseOffsetX, float noiseOffsetY, float fillPercentage, 
 	smoothCave(smoothIt); //Uses cellular automata to smooth the cave cells.
 	startCell = findStartCell(); //Finds an appropraite starting location.
 	fillInaccessibleAreas(startCell); //Removes inaccessible free cells.
-	removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
+	if ((int)smoothIt % 2 == 0) {
+	  removeNonBorderOccupiedAreas(); //Removes occupied cells not connected to the cave border.
+	}
 
 	//Converts the 2D array version of the cave into a vector of vector of ints.
 	vector<vector<int>> caveVector;
@@ -484,14 +486,23 @@ void pollGlobalCommunication() {
 					droneList[j].addNearDrone(droneList[i].posX, droneList[i].posY);
 				}
 			}
-
-			//Check to see if enough time has elapsed between communications with drones a and b.
-			if (droneList[i].allowCommunication(j)) {
-				droneList[i].combineMaps(droneList[j].internalMap, droneList[j].frontierCells, j);
-				droneList[j].combineMaps(droneList[i].internalMap, droneList[i].frontierCells, i);
-			}
 		}
 	}
+
+	for (size_t i = 0; i < Drone::droneCount - 1; i++) {
+		if (droneList[i+1].allowCommunication(i)) {
+			droneList[i+1].combineMaps(droneList[i].internalMap, droneList[i].frontierCells, i);
+		}
+	}
+	if (droneList[0].allowCommunication(Drone::droneCount - 1)) {
+		droneList[0].combineMaps(droneList[Drone::droneCount - 1].internalMap, droneList[Drone::droneCount - 1].frontierCells, Drone::droneCount - 1);
+	}
+	for (size_t i = 0; i < Drone::droneCount - 2; i++) {
+		if (droneList[i+1].allowCommunication(i)) {
+			droneList[i+1].combineMaps(droneList[i].internalMap, droneList[i].frontierCells, i);
+		}
+	}
+
 }
 
 //Displays the camera mode in the bottom-left corner as well as other useful statistics.
@@ -1059,7 +1070,7 @@ void idle() {
 			if (!droneList[i].complete) {
 				droneList[i].process();
 			}
-		}	
+		}
 		glutPostRedisplay();
 	}
 }

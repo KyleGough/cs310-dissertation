@@ -158,7 +158,7 @@ void Draw::drawDrone(float x, float y, float depth, float searchRadius, string n
 	drawDroneBoundingBox(depth + 0.01f);
 
 	//Search Range.
-	drawDroneSearchingRange(searchRadius, depth / 2.0f);
+	drawDroneSearchingRange(searchRadius, 0.2f);
 
 	glPopMatrix();
 
@@ -217,7 +217,7 @@ void Draw::drawDroneSearchingRange(float searchRadius, float depth) {
 	glBegin(GL_LINE_LOOP);
 
 	//Draws a segmented circle.
-	drawCircle(searchRadius, 32, depth / 2.0f);
+	drawCircle(searchRadius, 32, depth);
 
 	glEnd();
 	glDisable(GL_LINE_SMOOTH);
